@@ -1,0 +1,57 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tattlehash-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-11-01",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+
+  "assets": {
+    "directory": "./public"
+  },
+
+  "observability": { "enabled": true },
+
+  "kv_namespaces": [
+    {
+      "binding": "TATTLEHASH_KV",
+      "id": "a245bfaaf719496d9ebbb67e0a49312d",
+      "remote": true
+    },
+    {
+      "binding": "TATTLEHASH_CONTENT_KV",
+      "id": "e5346279094f46bd9c615820b9a5d444",
+      "remote": true
+    },
+    {
+      "binding": "TATTLEHASH_ANCHOR_KV",
+      "id": "320ec61c98aa4d4cacb72061232b04d7",
+      "remote": true
+    },
+    {
+      "binding": "TATTLEHASH_ERROR_KV",
+      "id": "f9b684b8802c43a0b2f2d57e43749a57",
+      "remote": true
+    }
+  ],
+
+  "queues": {
+    "producers": [
+      { "queue": "tattlehash-queue", "binding": "TATTLEHASH_QUEUE" },
+      { "queue": "tattlehash-dlq",   "binding": "TATTLEHASH_DLQ" }
+    ],
+    "consumers": [
+      { "queue": "tattlehash-queue" },
+      { "queue": "tattlehash-dlq" }
+    ]
+  },
+
+  "vars": {
+    "OPENAI_MODEL": "gpt-4o-mini",
+    "REF_LLM": "enabled",
+    "ANCHOR_MODE": "relay",
+    "TATTLEHASH_BRAND_NAME": "TattleHash"
+  }
+
+  // "placement": { "mode": "smart" }
+  // "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+}

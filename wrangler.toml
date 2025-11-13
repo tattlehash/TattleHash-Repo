@@ -1,0 +1,84 @@
+name = "tattlehash-worker"
+main = "src/worker.js"
+compatibility_date = "2025-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+account_id = "28706aa796b6e2ce4b97743a9e26646c"
+workers_dev = true
+logpush = true
+
+# --- KV Bindings (add preview_id for local dev) ---
+[[kv_namespaces]]
+binding = "TATTLEHASH_KV"
+id = "8d817a365473489facd03196856c89c3"
+preview_id = "8d817a365473489facd03196856c89c3"
+
+[[kv_namespaces]]
+binding = "TATTLEHASH_CONTENT_KV"
+id = "86957f93ad9b4920b974c31cc9f83d7d"
+preview_id = "86957f93ad9b4920b974c31cc9f83d7d"
+
+[[kv_namespaces]]
+binding = "TATTLEHASH_ANCHOR_KV"
+id = "1bdf2cacdfe741cf849501efe209a093"
+preview_id = "1bdf2cacdfe741cf849501efe209a093"
+
+[[kv_namespaces]]
+binding = "TATTLEHASH_ERROR_KV"
+id = "0dd3fe2666924d609f67fb962b89ef2b"
+preview_id = "0dd3fe2666924d609f67fb962b89ef2b"
+
+[[kv_namespaces]]
+binding = "ATT_KV"
+id = "a5793c8faf3a432a9c925e1f7bf2b7c5"
+preview_id = "PA998fb733384f47a8bcf362f4f6d2b356"
+
+# (Optional but recommended) reuse same KV for gate/shield now, split later
+[[kv_namespaces]]
+binding = "GATE_KV"
+id = "a5793c8faf3a432a9c925e1f7bf2b7c5"
+preview_id = "PA998fb733384f47a8bcf362f4f6d2b356"
+
+[[kv_namespaces]]
+binding = "SHIELD_KV"
+id = "a5793c8faf3a432a9c925e1f7bf2b7c5"
+preview_id = "PA998fb733384f47a8bcf362f4f6d2b356"
+
+# --- Queue Bindings (producer only) ---
+[[queues.producers]]
+binding = "TATTLEHASH_QUEUE"
+queue = "tattlehash-queue"
+
+# --- Environment Variables (merged) ---
+[vars]
+TATTLEHASH_BRAND_NAME = "TattleHash"
+ANCHOR_MODE = "relay"
+WEB3_RPC_URL_POLYGON = "https://polygon-rpc.com"
+OPENAI_MODEL = "gpt-4o-mini"
+NODE_ENV = "production"
+RPC_ETH_MAIN = "https://cloudflare-eth.com"
+RPC_BASE_MAIN = "https://base-mainnet.public.blastapi.io"
+# Async Anchoring extras:
+POLICY_VERSION = "shield-v1"
+QUEUE_PREFIX = "anchor:jobs:"
+RECEIPT_PREFIX = "attest:"
+
+# --- Domain routing ---
+routes = [
+  { pattern = "api.tattlehash.com/*", zone_name = "tattlehash.com" }
+]
+
+# === Async Anchoring: Cron schedule ===
+[triggers]
+crons = ["*/2 * * * *"]  # every 2 minutes
+
+# === Async Anchoring: Durable Object for global lock ===
+[durable_objects]
+bindings = [
+  { name = "AnchorLock", class_name = "AnchorLock" }
+]
+
+# First-time migration for the DO
+[[migrations]]
+tag = "anchor-lock-v1"
+new_classes = ["AnchorLock"]

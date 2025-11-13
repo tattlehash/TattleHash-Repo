@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    /* Target modern Workers runtime */
+    "target": "ES2022",
+    "lib": ["ES2022", "WebWorker"],
+
+    /* Native ESM + bundler-style resolution (Wrangler/esbuild) */
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+
+    /* Type safety */
+    "strict": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    /* We let Wrangler/esbuild emit */
+    "noEmit": true,
+
+    /* DX: rich autocompletion for Workers & tests */
+    "types": [
+      "@cloudflare/workers-types",
+      "vitest",
+      "@cloudflare/vitest-pool-workers",
+      "./worker-configuration.d.ts"
+    ]
+
+    /* If you truly need to include .js files in the program, set:
+       "allowJs": true
+       (Not recommended unless you’re keeping legacy JS in the TS program.) */
+  },
+  "include": ["worker-configuration.d.ts", "src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test"]
+}
