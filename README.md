@@ -146,5 +146,36 @@ wrangler.jsonc.jsonc        # Extra wrangler / deploy config
 
 worker-configuration.d.ts   # Worker environment types
 
+---
 
+## Working on this repo
+
+This section is for anyone actively developing on the TattleHash Worker codebase — including future me and any licensees.
+
+### Prerequisites
+
+- Node.js and npm installed
+- Access to the TattleHash Cloudflare account (or your own, if you’re a licensee)
+- Wrangler CLI installed:
+  ```bash
+  npm install -g wrangler
+
+# 1. See what changed
+git status
+
+# 2. Stage files you actually want to commit
+git add <files>       # or: git add .
+
+# 3. Save a snapshot with a clear message
+git commit -m "Short but specific description"
+
+# 4. Push to the shared main branch (or your feature branch)
+git push
+
+
+git checkout -b feature/short-description
+# make changes
+git add .
+git commit -m "Implement X"
+git push -u origin feature/short-description
 
