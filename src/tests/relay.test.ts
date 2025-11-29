@@ -117,14 +117,14 @@ describe('Relay System', () => {
         // Should record failure in DB
         expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO webhook_deliveries'));
 
-        // Should enqueue retry
+        // Should enqueue retry (deliverWebhook doesn't pass delaySeconds on first failure)
         expect(mockQueue.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'webhook_retry',
-                delivery_id: expect.any(String)
-            }),
-            expect.objectContaining({
-                delaySeconds: expect.any(Number)
+                delivery_id: expect.any(String),
+                subscription_id: 'sub_1',
+                event_type: 'test.event',
+                attempt: 1,
             })
         );
     });
