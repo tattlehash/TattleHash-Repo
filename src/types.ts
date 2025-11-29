@@ -21,7 +21,8 @@ export interface Env {
 
   // Environment Variables (from wrangler.toml [vars])
   TATTLEHASH_BRAND_NAME?: string;
-  ANCHOR_MODE?: string;
+  /** Anchor mode: 'mock' (testing), 'relay' (external service), or 'direct' (RPC) */
+  ANCHOR_MODE?: 'mock' | 'relay' | 'direct' | string;
   WEB3_RPC_URL_POLYGON?: string;
   OPENAI_MODEL?: string;
   NODE_ENV?: string;
