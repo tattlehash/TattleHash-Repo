@@ -1,3 +1,4 @@
+import { Env } from "../types";
 import { postAttest } from "../handlers/attest";
 import { postSweep } from "../handlers/sweep";
 import { getReceipt } from "../handlers/receipt";

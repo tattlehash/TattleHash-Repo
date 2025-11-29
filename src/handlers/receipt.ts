@@ -1,3 +1,4 @@
+import { Env } from "../types";
 import { ok, err } from "../lib/http";
 import { recKey } from "../lib/kv";
 

@@ -1,3 +1,5 @@
+import { Env } from "../types";
+
 export const JOB_TTL_SEC = 60 * 60 * 24;
 
 export const qPref = (env: Env) => env.QUEUE_PREFIX || "anchor:jobs:";

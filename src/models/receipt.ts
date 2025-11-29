@@ -8,6 +8,8 @@ export interface Receipt {
   policyVersion: string;
 }
 
+import { Env } from "../types";
+
 export function makeReceipt(env: Env, initiatorCommit?: string): Receipt {
   return {
     id: crypto.randomUUID(),

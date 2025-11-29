@@ -1,11 +1,17 @@
 name = "tattlehash-worker"
-main = "src/worker.js"
+main = "src/worker.ts"
 compatibility_date = "2025-11-01"
 compatibility_flags = ["nodejs_compat"]
 
 account_id = "28706aa796b6e2ce4b97743a9e26646c"
 workers_dev = true
 logpush = true
+
+# --- D1 Database ---
+[[d1_databases]]
+binding = "TATTLEHASH_DB"
+database_name = "tattlehash-db"
+database_id = "eeb94d8a-ed09-4761-9776-8a1e2fe3377a"
 
 # --- KV Bindings (add preview_id for local dev) ---
 [[kv_namespaces]]

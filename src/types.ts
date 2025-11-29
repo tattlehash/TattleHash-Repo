@@ -1,17 +1,18 @@
-// Cloudflare bindings
-type KV = KVNamespace;
-type DO = DurableObjectNamespace;
 
-declare global {
-  interface Env {
-    TATTLEHASH_ANCHOR_KV: KV;
-    ATT_KV: KV;
-    AnchorLock: DO;
+import { D1Database, KVNamespace, Queue } from '@cloudflare/workers-types';
 
-    // config
-    POLICY_VERSION?: string;
-    QUEUE_PREFIX?: string;   // default "anchor:jobs:"
-    RECEIPT_PREFIX?: string; // default "attest:"
-  }
+export interface Env {
+  TATTLEHASH_DB: D1Database;
+  GATE_KV: KVNamespace;
+  ATT_KV: KVNamespace;
+  TATTLEHASH_QUEUE: Queue;
+  TATTLEHASH_KV: KVNamespace;
+  TATTLEHASH_CONTENT_KV: KVNamespace;
+  TATTLEHASH_ANCHOR_KV: KVNamespace;
+  TATTLEHASH_ERROR_KV: KVNamespace;
+  SHIELD_KV: KVNamespace;
+  TEST_TOKEN?: string;
+  GATEKEEPER_V2_ENABLED?: string;
+  ADMIN_SECRET?: string;
+  [key: string]: any;
 }
-export {};

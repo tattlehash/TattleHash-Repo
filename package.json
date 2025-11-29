@@ -20,5 +20,11 @@
     "typescript": "^5.6.3",
     "vitest": "~3.2.0",
     "wrangler": "^4.45.3"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
+    "@noble/secp256k1": "^3.0.0",
+    "zod": "^4.1.13"
   }
 }
