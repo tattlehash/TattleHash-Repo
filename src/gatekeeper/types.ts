@@ -20,6 +20,9 @@ export interface WalletVerifyResponse {
     status: 'VERIFIED';
     wallet_address: string;
     verified_at: string;
+    user_id: string;
+    token: string;
+    token_expires_at: string;
 }
 
 export interface WalletVerificationChallenge {

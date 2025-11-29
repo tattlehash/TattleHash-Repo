@@ -11,6 +11,7 @@ import {
 } from '../gatekeeper/challenges';
 import { CreateChallengeSchema, AcceptChallengeSchema } from '../utils/validation';
 import { getCachedChallenge, setCachedChallenge, invalidateChallengeCache } from '../lib/cache';
+import { authenticateRequest } from '../middleware/auth';
 import { Env } from '../types';
 
 export async function postCreateChallenge(
@@ -22,12 +23,16 @@ export async function postCreateChallenge(
         return err(503, 'FEATURE_DISABLED');
     }
 
+    // Authenticate user
+    const authResult = await authenticateRequest(request, env);
+    if (!authResult.ok) {
+        return err(authResult.error.status, authResult.error.code as any, authResult.error.details);
+    }
+    const { userId } = authResult.context;
+
     try {
         const body = await request.json();
         const data = CreateChallengeSchema.parse(body);
-
-        // TODO: Get user ID from auth
-        const userId = 'test-user-id'; // Placeholder
 
         const result = await createChallenge(env, data, userId);
         return ok(result, { status: 201 });
@@ -56,10 +61,14 @@ export async function postSendChallenge(
         return err(503, 'FEATURE_DISABLED');
     }
 
-    try {
-        // TODO: Get user ID from auth
-        const userId = 'test-user-id';
+    // Authenticate user
+    const authResult = await authenticateRequest(request, env);
+    if (!authResult.ok) {
+        return err(authResult.error.status, authResult.error.code as any, authResult.error.details);
+    }
+    const { userId } = authResult.context;
 
+    try {
         const result = await sendChallenge(env, challengeId, userId);
         return ok(result);
     } catch (e: any) {
@@ -84,12 +93,16 @@ export async function postAcceptChallenge(
         return err(503, 'FEATURE_DISABLED');
     }
 
+    // Authenticate user
+    const authResult = await authenticateRequest(request, env);
+    if (!authResult.ok) {
+        return err(authResult.error.status, authResult.error.code as any, authResult.error.details);
+    }
+    const { userId } = authResult.context;
+
     try {
         const body = await request.json();
         const data = AcceptChallengeSchema.parse(body);
-
-        // TODO: Get user ID from auth
-        const userId = 'test-counterparty-id';
 
         const result = await acceptChallenge(env, challengeId, data, userId);
         return ok(result);
@@ -118,10 +131,14 @@ export async function postCompleteChallenge(
         return err(503, 'FEATURE_DISABLED');
     }
 
-    try {
-        // TODO: Get user ID from auth
-        const userId = 'test-user-id';
+    // Authenticate user
+    const authResult = await authenticateRequest(request, env);
+    if (!authResult.ok) {
+        return err(authResult.error.status, authResult.error.code as any, authResult.error.details);
+    }
+    const { userId } = authResult.context;
 
+    try {
         const result = await completeChallenge(env, challengeId, userId);
         return ok(result);
     } catch (e: any) {

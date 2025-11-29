@@ -28,6 +28,12 @@ export const ERRORS = {
     FUNDS_INSUFFICIENT: { code: 'FUNDS_INSUFFICIENT', status: 400, message: 'Insufficient funds' },
     FUNDS_RPC_ERROR: { code: 'FUNDS_RPC_ERROR', status: 502, message: 'RPC provider error' },
 
+    // Authentication
+    AUTH_TOKEN_INVALID: { code: 'AUTH_TOKEN_INVALID', status: 401, message: 'Invalid authentication token' },
+    AUTH_TOKEN_EXPIRED: { code: 'AUTH_TOKEN_EXPIRED', status: 401, message: 'Authentication token has expired' },
+    AUTH_SECRET_NOT_CONFIGURED: { code: 'AUTH_SECRET_NOT_CONFIGURED', status: 500, message: 'Authentication not configured' },
+    USER_NOT_FOUND: { code: 'USER_NOT_FOUND', status: 404, message: 'User not found' },
+
     // Challenges
     CHALLENGE_NOT_FOUND: { code: 'CHALLENGE_NOT_FOUND', status: 404, message: 'Challenge not found' },
     CHALLENGE_INVALID_TRANSITION: { code: 'CHALLENGE_INVALID_TRANSITION', status: 400, message: 'Invalid state transition' },

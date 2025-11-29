@@ -34,6 +34,7 @@ export interface Env {
 
   // Secrets (from wrangler secret)
   ADMIN_SECRET?: string;
+  AUTH_SECRET?: string;
   OPENAI_API_KEY?: string;
   TATTLEHASH_GATE_KEY?: string;
 

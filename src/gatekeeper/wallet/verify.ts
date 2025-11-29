@@ -3,6 +3,7 @@ import { queryOne, execute } from '../../db';
 import { recoverAddressFromSignature } from './recovery';
 import { createError } from '../../errors';
 import { emitEvent } from '../../relay';
+import { getOrCreateUser, generateToken } from '../../auth';
 import type { WalletVerifyRequest, WalletVerifyResponse } from '../types';
 import { Env } from '../../types';
 
@@ -62,16 +63,27 @@ export async function verifyWalletSignature(
     // Clean up KV
     await env.GATE_KV.delete(`wallet_challenge:${data.challenge_id}`);
 
+    // Get or create user for this wallet
+    const { user, created } = await getOrCreateUser(env, normalizedExpected);
+
+    // Generate auth token
+    const authToken = await generateToken(env, user.id, user.wallet_address);
+
     // Emit event
     await emitEvent(env, {
         type: 'wallet.verified',
         wallet_address: normalizedExpected,
-        verified_at: verifiedAt
+        verified_at: verifiedAt,
+        user_id: user.id,
+        user_created: created,
     });
 
     return {
         status: 'VERIFIED',
         wallet_address: normalizedExpected,
         verified_at: verifiedAt,
+        user_id: user.id,
+        token: authToken.token,
+        token_expires_at: authToken.expires_at,
     };
 }
