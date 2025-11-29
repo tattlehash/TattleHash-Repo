@@ -1,7 +1,4 @@
-
-export interface Env {
-    [key: string]: any;
-}
+import { Env } from '../types';
 
 export function getFlag(flag: string, env: Env): boolean {
     // Check environment variable first
