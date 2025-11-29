@@ -1,5 +1,6 @@
 import { ok, err } from '../lib/http';
 import { Env } from '../types';
+import { queryTransactionStatus } from '../anchor';
 
 type JsonDict = Record<string, unknown>;
 
@@ -17,18 +18,22 @@ async function safeJSON(req: Request, maxBytes = 512 * 1024): Promise<JsonDict> 
 
 interface PendingAnchor {
     txHash: string;
+    chainId?: 'polygon' | 'ethereum' | 'arbitrum' | 'base' | 'optimism';
     confirmations?: number;
     final?: boolean;
     [key: string]: unknown;
 }
 
-// Placeholder - replace with real implementation
+// Query transaction status from blockchain
 async function queryTxStatus(
-    _rec: PendingAnchor,
-    _env: Env
+    rec: PendingAnchor,
+    env: Env
 ): Promise<{ confirmations: number; reorged?: boolean }> {
-    // TODO: Implement real RPC query for transaction status
-    return { confirmations: 12, reorged: false };
+    const status = await queryTransactionStatus(env, rec.txHash, rec.chainId || 'polygon');
+    return {
+        confirmations: status.confirmations,
+        reorged: status.reorged,
+    };
 }
 
 export async function postAnchorPoll(req: Request, env: Env): Promise<Response> {

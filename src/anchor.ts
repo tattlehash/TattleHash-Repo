@@ -2,83 +2,46 @@
 import { DurableObjectStub } from '@cloudflare/workers-types';
 import { Env } from './types';
 
-export type ModeState = "pending" | "confirmed" | "anchored" | "expired" | "void" | "refund";
+// Re-export storage types and functions
+export {
+  type ModeState,
+  type AnchorJob,
+  type AttestRecord,
+  JOB_TTL_SEC,
+  enqueueAnchor,
+  listAnchorJobs,
+  getJob,
+  deleteJob,
+  getReceipt,
+  putReceipt,
+  makeReceipt,
+} from './anchor/storage';
 
-export type AnchorJob = {
-  id: string;
-  receiptId: string;
-  createdAt: number;
-  attempts: number;
-  chain: "ethereum" | "arbitrum" | "polygon" | "base";
-};
+// Import for local use
+import {
+  type AnchorJob,
+  type AttestRecord,
+  getJob,
+  deleteJob,
+  getReceipt,
+  putReceipt,
+} from './anchor/storage';
 
-export type AttestRecord = {
-  id: string;
-  mode: "pending" | "confirmed" | "anchored" | "expired";
-  initiatorCommit: string;
-  counterCommit?: string;
-  final?: string;
-  receivedAt: number;
-  policyVersion: string;
-  txHash?: string;
-};
+// Import the new anchor service
+import { anchorRecord as anchorRecordService, queryTransactionStatus } from './anchor/service';
 
-export const JOB_TTL_SEC = 60 * 60 * 24;
+// Re-export queryTransactionStatus for use by handlers
+export { queryTransactionStatus };
 
-const DEFAULT_QUEUE_PREFIX = 'anchor:jobs:';
-const DEFAULT_RECEIPT_PREFIX = 'attest:';
-
-function jobKey(env: Env, id: string) {
-  return `${env.QUEUE_PREFIX || DEFAULT_QUEUE_PREFIX}${id}`;
-}
-function receiptKey(env: Env, id: string) {
-  return `${env.RECEIPT_PREFIX || DEFAULT_RECEIPT_PREFIX}${id}`;
-}
-
-export async function enqueueAnchor(env: Env, job: AnchorJob) {
-  await env.TATTLEHASH_ANCHOR_KV.put(jobKey(env, job.id), JSON.stringify(job), { expirationTtl: JOB_TTL_SEC });
-}
-export async function listAnchorJobs(env: Env, cursor?: string) {
-  return env.TATTLEHASH_ANCHOR_KV.list({ prefix: env.QUEUE_PREFIX || DEFAULT_QUEUE_PREFIX, cursor, limit: 100 });
-}
-export async function getJob(env: Env, id: string) {
-  const raw = await env.TATTLEHASH_ANCHOR_KV.get(jobKey(env, id));
-  return raw ? (JSON.parse(raw) as AnchorJob) : null;
-}
-export async function getReceipt(env: Env, id: string) {
-  const raw = await env.ATT_KV.get(receiptKey(env, id));
-  return raw ? (JSON.parse(raw) as AttestRecord) : null;
-}
-export async function putReceipt(env: Env, record: AttestRecord) {
-  await env.ATT_KV.put(receiptKey(env, record.id), JSON.stringify(record));
-}
-
-// Chain anchoring - supports MOCK_MODE for testing
+// Chain anchoring - delegates to anchor service
 async function anchorOnChain(env: Env, job: AnchorJob, rec: AttestRecord): Promise<string> {
-  // Check for mock mode (for testing without hitting real endpoints)
-  const mockMode = env.ANCHOR_MODE === 'mock' || env.NODE_ENV === 'test';
+  const result = await anchorRecordService(env, job, rec);
 
-  if (mockMode) {
-    // Generate a deterministic mock tx hash based on receipt data
-    const mockData = `mock:${rec.id}:${rec.initiatorCommit || ''}:${Date.now()}`;
-    const encoder = new TextEncoder();
-    const hash = await crypto.subtle.digest('SHA-256', encoder.encode(mockData));
-    return "0xmock_" + Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 60);
+  if (!result.ok || !result.txHash) {
+    throw new Error(result.error || 'Anchor submission failed');
   }
 
-  // Relay mode - use external anchoring service
-  if (env.ANCHOR_MODE === 'relay') {
-    // TODO: Implement relay to external anchoring service
-    // For now, generate a simulated tx hash
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    return "0xrelay_" + Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
-  }
-
-  // Direct mode - submit directly to blockchain via RPC
-  // TODO: Implement direct RPC submission when needed
-  // For now, generate a simulated tx hash
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return "0x" + Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+  return result.txHash;
 }
 
 export async function processOneJob(env: Env, id: string) {
@@ -89,11 +52,11 @@ export async function processOneJob(env: Env, id: string) {
   if (!rec) return { ok: false, reason: "missing-receipt" };
 
   if (rec.mode === "anchored") {
-    await env.TATTLEHASH_ANCHOR_KV.delete(jobKey(env, id));
+    await deleteJob(env, id);
     return { ok: true, reason: "already-anchored" };
   }
   if (rec.mode !== "confirmed" && rec.mode !== "pending") {
-    await env.TATTLEHASH_ANCHOR_KV.delete(jobKey(env, id));
+    await deleteJob(env, id);
     return { ok: false, reason: `invalid-state:${rec.mode}` };
   }
 
@@ -112,22 +75,11 @@ export async function processOneJob(env: Env, id: string) {
     rec.mode = "anchored";
     rec.txHash = txHash;
     await putReceipt(env, rec);
-    await env.TATTLEHASH_ANCHOR_KV.delete(jobKey(env, id));
+    await deleteJob(env, id);
     return { ok: true, txHash };
   } finally {
     if (lock) {
       await lock.fetch("https://lock/release", { method: "POST" });
     }
   }
-}
-
-// Exported for reuse in your other modules if needed
-export function makeReceipt(env: Env, initiatorCommit: string): AttestRecord {
-  return {
-    id: crypto.randomUUID(),
-    mode: "pending",
-    initiatorCommit,
-    receivedAt: Date.now(),
-    policyVersion: env.POLICY_VERSION || 'shield-v1'
-  };
 }
