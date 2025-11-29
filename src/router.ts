@@ -91,6 +91,52 @@ export async function route(req: Request, env: Env): Promise<Response> {
     return postCompleteChallenge(req, env, completeMatch.groups.id);
   }
 
+  // Game flow
+  if (req.method === "POST" && pathname === "/game/create") {
+    const { postGameCreate } = await import("./handlers/game");
+    return postGameCreate(req, env);
+  }
+  if (req.method === "POST" && pathname === "/game/commit") {
+    const { postGameCommit } = await import("./handlers/game");
+    return postGameCommit(req, env);
+  }
+  if (req.method === "POST" && pathname === "/game/reveal") {
+    const { postGameReveal } = await import("./handlers/game");
+    return postGameReveal(req, env);
+  }
+
+  // ENF (Evidence-and-Forward)
+  if (req.method === "POST" && pathname === "/enf/init") {
+    const { postEnfInit } = await import("./handlers/enf");
+    return postEnfInit(req, env);
+  }
+  if (req.method === "POST" && pathname === "/enf/action") {
+    const { postEnfAction } = await import("./handlers/enf");
+    return postEnfAction(req, env);
+  }
+
+  // POF (Proof-of-Funds)
+  if (req.method === "POST" && pathname === "/pof/init") {
+    const { postPofInit } = await import("./handlers/pof");
+    return postPofInit(req, env);
+  }
+  if (req.method === "POST" && pathname === "/pof/post") {
+    const { postPofPost } = await import("./handlers/pof");
+    return postPofPost(req, env);
+  }
+
+  // Governance
+  if (req.method === "POST" && pathname === "/governance/update") {
+    const { postGovernanceUpdate } = await import("./handlers/governance");
+    return postGovernanceUpdate(req, env);
+  }
+
+  // Anchor polling
+  if (req.method === "POST" && pathname === "/anchor/poll") {
+    const { postAnchorPoll } = await import("./handlers/anchor");
+    return postAnchorPoll(req, env);
+  }
+
   // Admin routes (protected)
   if (pathname.startsWith("/admin/")) {
     // Admin sweep (legacy, keep for backwards compat)
