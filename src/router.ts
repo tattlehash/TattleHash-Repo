@@ -12,6 +12,12 @@ import { handleDisputes } from "./handlers/admin/disputes";
 import { Env } from "./types";
 
 export async function route(req: Request, env: Env): Promise<Response> {
+  // All responses get security headers applied
+  const response = await routeInternal(req, env);
+  return addSecurityHeaders(response);
+}
+
+async function routeInternal(req: Request, env: Env): Promise<Response> {
   const { pathname } = new URL(req.url);
 
   // Apply rate limiting (skip for health check)
@@ -20,10 +26,10 @@ export async function route(req: Request, env: Env): Promise<Response> {
       pathname.startsWith("/challenges") && req.method === 'POST' ? 'challenge_create' :
         'public';
     const rateLimitCheck = await checkRateLimit(req, env, limitType);
-    if (!rateLimitCheck.ok) return addSecurityHeaders(rateLimitCheck.response);
+    if (!rateLimitCheck.ok) return rateLimitCheck.response;
   }
 
-  // CORS preflight
+  // CORS preflight (no security headers needed for OPTIONS)
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -137,20 +143,17 @@ export async function route(req: Request, env: Env): Promise<Response> {
     return postAnchorPoll(req, env);
   }
 
-  // Admin routes (protected)
+  // Admin routes (ALL protected by auth)
   if (pathname.startsWith("/admin/")) {
-    // Admin sweep (legacy, keep for backwards compat)
-    if (req.method === "POST" && pathname === "/admin/sweep") return postSweep(req, env);
-
-    // Require authentication for all other admin routes
+    // Require authentication for ALL admin routes (including sweep)
     const adminCheck = await requireAdmin(req, env);
     if (!adminCheck.ok) return adminCheck.response;
 
+    if (req.method === "POST" && pathname === "/admin/sweep") return postSweep(req, env);
     if (req.method === "GET" && pathname === "/admin/status") return getStatus(req, env);
     if (req.method === "GET" && pathname === "/admin/metrics") return getMetrics(req, env);
     if (pathname.startsWith("/admin/disputes")) return handleDisputes(req, env);
   }
 
-  const notFound = err(404, "route_not_found", { method: req.method, pathname });
-  return addSecurityHeaders(notFound);
+  return err(404, "route_not_found", { method: req.method, pathname });
 }
