@@ -31,5 +31,5 @@
        (Not recommended unless you’re keeping legacy JS in the TS program.) */
   },
   "include": ["worker-configuration.d.ts", "src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "test"]
+  "exclude": ["node_modules", "dist", "test", "src/games"]
 }
