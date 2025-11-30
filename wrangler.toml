@@ -50,14 +50,31 @@ binding = "SHIELD_KV"
 id = "a5793c8faf3a432a9c925e1f7bf2b7c5"
 preview_id = "PA998fb733384f47a8bcf362f4f6d2b356"
 
-# --- Queue Bindings (producer only) ---
+# --- R2 Bucket ---
+[[r2_buckets]]
+binding = "TATTLEHASH_PDF_BUCKET"
+bucket_name = "tattlehash-pdfs"
+
+# --- Queue Bindings ---
 [[queues.producers]]
 binding = "TATTLEHASH_QUEUE"
 queue = "tattlehash-queue"
 
+[[queues.producers]]
+binding = "TATTLEHASH_DLQ"
+queue = "tattlehash-dlq"
+
+[[queues.consumers]]
+queue = "tattlehash-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "tattlehash-dlq"
+
 # --- Environment Variables (merged) ---
 [vars]
 TATTLEHASH_BRAND_NAME = "TattleHash"
+VERIFICATION_PORTAL_URL = "https://verify.tattlehash.com"
 ANCHOR_MODE = "relay"
 WEB3_RPC_URL_POLYGON = "https://polygon-rpc.com"
 OPENAI_MODEL = "gpt-4o-mini"
