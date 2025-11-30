@@ -67,7 +67,8 @@ function getChainProvider(env: Env, chainId: ChainId = 'polygon'): ChainProvider
  */
 function getPrivateKey(env: Env): string | null {
     // Private key should be stored as a secret
-    const key = (env as Record<string, unknown>).ANCHOR_PRIVATE_KEY as string | undefined;
+    // Try POLYGON_PRIVATE_KEY first, then ANCHOR_PRIVATE_KEY for backwards compatibility
+    const key = env.POLYGON_PRIVATE_KEY || (env as Record<string, unknown>).ANCHOR_PRIVATE_KEY as string | undefined;
     if (!key) return null;
 
     // Remove 0x prefix if present
