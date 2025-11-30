@@ -8,7 +8,12 @@
       "Bash(wrangler d1 execute:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(curl -X POST https://tattlehash-worker.ashiscock.workers.dev/auth/register  -H \"Content-Type: application/json\"  -d '{\"\"email\"\": \"\"tony@tattlehash.com\"\", \"\"password\"\": \"\"TattleHash2025!\"\"}')",
+      "Bash(curl:*)",
+      "Bash(wrangler secret put:*)",
+      "Bash(wrangler deployments:*)",
+      "Bash(wrangler deploy:*)"
     ],
     "deny": [],
     "ask": []

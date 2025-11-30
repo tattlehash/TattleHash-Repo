@@ -166,16 +166,19 @@ export async function postRegister(req: Request, env: Env): Promise<Response> {
     // Create user
     const userId = crypto.randomUUID();
     const now = Date.now();
+    // For email-based users, use a placeholder wallet address (email: prefix)
+    const placeholderWallet = `email:${normalizedEmail}`;
 
     await execute(
         env.TATTLEHASH_DB,
         `INSERT INTO users (
-            id, email, username, display_name, password_hash, auth_method,
+            id, wallet_address, email, username, display_name, password_hash, auth_method,
             email_verification_token, email_verification_expires_at,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             userId,
+            placeholderWallet,
             normalizedEmail,
             username?.toLowerCase() ?? null,
             display_name ?? null,
