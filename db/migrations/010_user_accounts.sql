@@ -3,8 +3,9 @@
 -- Adds email/password auth, profile fields, and preferences
 
 -- Add new columns to users table
-ALTER TABLE users ADD COLUMN email TEXT UNIQUE;
-ALTER TABLE users ADD COLUMN username TEXT UNIQUE;
+-- Note: SQLite doesn't support UNIQUE in ALTER TABLE, so we use unique indexes instead
+ALTER TABLE users ADD COLUMN email TEXT;
+ALTER TABLE users ADD COLUMN username TEXT;
 ALTER TABLE users ADD COLUMN display_name TEXT;
 ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0;
 ALTER TABLE users ADD COLUMN email_verification_token TEXT;
@@ -38,9 +39,9 @@ CREATE TABLE IF NOT EXISTS linked_wallets (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+-- Indexes (UNIQUE indexes to enforce uniqueness since ALTER TABLE doesn't support UNIQUE)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_auth_method ON users(auth_method);
 CREATE INDEX IF NOT EXISTS idx_password_reset_user ON password_reset_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_password_reset_expires ON password_reset_tokens(expires_at);
