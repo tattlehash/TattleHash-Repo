@@ -6,6 +6,7 @@
  */
 
 import * as secp256k1 from '@noble/secp256k1';
+import { Signature } from '@noble/secp256k1';
 import { keccak256 } from '../../utils/crypto';
 import type {
     ChainProvider,
@@ -172,28 +173,28 @@ async function signEIP1559Tx(params: EIP1559TxParams, privateKey: string): Promi
     // Convert private key to bytes
     const privKeyBytes = hexToBytes(privateKey);
 
-    // Sign with secp256k1 - format 'recovered' returns 65 bytes: 32 r + 32 s + 1 recovery
-    // prehash: false because we already hashed with keccak256
+    // Sign with secp256k1 - get recovered format (65 bytes: r + s + recovery)
     const sigBytes = await secp256k1.signAsync(txHash, privKeyBytes, {
         lowS: true,
         prehash: false,
         format: 'recovered'
     });
 
+    // Parse signature using Signature class for proper handling
+    const sig = Signature.fromBytes(sigBytes, 'recovered');
+    const r = sig.r;
+    const s = sig.s;
+    const v = sig.recovery ?? 0; // Recovery bit (0 or 1) for EIP-1559 type 2 transactions
+
     // Debug logging
     console.log(JSON.stringify({
         at: 'sign_debug',
         sigBytesLength: sigBytes.length,
-        firstByte: sigBytes[0],
-        lastByte: sigBytes[sigBytes.length - 1],
-        byte64: sigBytes[64],
-        txHashLength: txHash.length,
+        r: r.toString(16).substring(0, 16) + '...',
+        s: s.toString(16).substring(0, 16) + '...',
+        v: v,
+        hasRecovery: sig.recovery !== undefined,
     }));
-
-    // Parse signature: 65 bytes = 32 bytes r + 32 bytes s + 1 byte recovery
-    const r = BigInt(bytesToHex(sigBytes.slice(0, 32)));
-    const s = BigInt(bytesToHex(sigBytes.slice(32, 64)));
-    const v = sigBytes[64]; // Recovery bit (0 or 1) for EIP-1559 type 2 transactions
 
     // Create signed transaction
     return serializeEIP1559Tx(params, { v, r, s });
