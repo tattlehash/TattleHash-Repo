@@ -1,0 +1,126 @@
+/**
+ * Stripe Payment Types and Constants
+ */
+
+import { z } from 'zod';
+
+// ============================================================================
+// Product Configuration
+// ============================================================================
+
+export const STRIPE_PRODUCTS = {
+    SOLO: {
+        mode: 'SOLO' as const,
+        name: 'Solo Mode',
+        description: 'Single attestation with blockchain anchoring',
+        price_cents: 99, // $0.99
+        credits: 1,
+        type: 'one_time' as const,
+    },
+    FIRE: {
+        mode: 'FIRE' as const,
+        name: 'Fire Mode',
+        description: 'Fast-track attestation with priority processing',
+        price_cents: 199, // $1.99
+        credits: 1,
+        type: 'one_time' as const,
+    },
+    GATEKEEPER: {
+        mode: 'GATEKEEPER' as const,
+        name: 'Gatekeeper Mode',
+        description: 'Two-party attestation with challenge support',
+        price_cents: 199, // $1.99
+        credits: 1,
+        type: 'one_time' as const,
+    },
+    ENFORCED: {
+        mode: 'ENFORCED' as const,
+        name: 'Enforced Mode',
+        description: 'Full enforcement with stake requirements',
+        price_cents: 299, // $2.99
+        credits: 1,
+        type: 'one_time' as const,
+    },
+    PRO: {
+        mode: 'PRO' as const,
+        name: 'Pro Subscription',
+        description: 'Monthly subscription with 10 credits',
+        price_cents: 999, // $9.99/month
+        credits: 10,
+        type: 'subscription' as const,
+    },
+} as const;
+
+export type ProductMode = keyof typeof STRIPE_PRODUCTS;
+
+// ============================================================================
+// Request Schemas
+// ============================================================================
+
+export const CreateCheckoutSchema = z.object({
+    mode: z.enum(['SOLO', 'FIRE', 'GATEKEEPER', 'ENFORCED', 'PRO']),
+    user_id: z.string().uuid(),
+    success_url: z.string().url().optional(),
+    cancel_url: z.string().url().optional(),
+});
+
+export type CreateCheckoutInput = z.infer<typeof CreateCheckoutSchema>;
+
+// ============================================================================
+// Stripe Types (minimal for our use case)
+// ============================================================================
+
+export interface StripeCheckoutSession {
+    id: string;
+    object: 'checkout.session';
+    url: string | null;
+    payment_status: 'paid' | 'unpaid' | 'no_payment_required';
+    status: 'open' | 'complete' | 'expired';
+    mode: 'payment' | 'subscription' | 'setup';
+    customer: string | null;
+    customer_email: string | null;
+    metadata: Record<string, string>;
+    amount_total: number | null;
+    currency: string | null;
+}
+
+export interface StripeEvent {
+    id: string;
+    object: 'event';
+    type: string;
+    data: {
+        object: StripeCheckoutSession | Record<string, unknown>;
+    };
+    created: number;
+    livemode: boolean;
+}
+
+export interface StripeWebhookEndpoint {
+    id: string;
+    object: 'webhook_endpoint';
+    url: string;
+    enabled_events: string[];
+    status: 'enabled' | 'disabled';
+    secret?: string;
+}
+
+// ============================================================================
+// Response Types
+// ============================================================================
+
+export interface CheckoutResponse {
+    checkout_url: string;
+    session_id: string;
+    product: {
+        mode: string;
+        name: string;
+        price_cents: number;
+        credits: number;
+    };
+}
+
+export interface WebhookResponse {
+    received: boolean;
+    event_type?: string;
+    processed?: boolean;
+}

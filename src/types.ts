@@ -42,6 +42,8 @@ export interface Env {
   ANCHOR_PRIVATE_KEY?: string;
   OPENAI_API_KEY?: string;
   TATTLEHASH_GATE_KEY?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
 
   // Feature Flags
   TEST_TOKEN?: string;

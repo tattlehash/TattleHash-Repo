@@ -526,6 +526,33 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     return postClaimPromotion(req, env);
   }
 
+  // ============================================================================
+  // Payments (Stripe)
+  // ============================================================================
+
+  if (req.method === "POST" && pathname === "/payments/create-checkout") {
+    const { postCreateCheckout } = await import("./handlers/payments");
+    return postCreateCheckout(req, env);
+  }
+  if (req.method === "GET" && pathname === "/payments/products") {
+    const { getProducts } = await import("./handlers/payments");
+    return getProducts(req, env);
+  }
+  if (req.method === "GET" && pathname === "/payments/success") {
+    const { getPaymentSuccess } = await import("./handlers/payments");
+    return getPaymentSuccess(req, env);
+  }
+  if (req.method === "GET" && pathname === "/payments/cancel") {
+    const { getPaymentCancel } = await import("./handlers/payments");
+    return getPaymentCancel(req, env);
+  }
+
+  // Stripe Webhook (no auth required - uses signature verification)
+  if (req.method === "POST" && pathname === "/webhooks/stripe") {
+    const { postStripeWebhook } = await import("./handlers/payments");
+    return postStripeWebhook(req, env);
+  }
+
   // Admin routes (ALL protected by auth)
   if (pathname.startsWith("/admin/")) {
     // Require authentication for ALL admin routes (including sweep)
