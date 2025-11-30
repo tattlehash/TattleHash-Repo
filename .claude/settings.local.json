@@ -13,7 +13,10 @@
       "Bash(curl:*)",
       "Bash(wrangler secret put:*)",
       "Bash(wrangler deployments:*)",
-      "Bash(wrangler deploy:*)"
+      "Bash(wrangler deploy:*)",
+      "Bash(wrangler queues list:*)",
+      "Bash(npx wrangler deploy)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

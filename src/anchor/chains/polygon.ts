@@ -172,7 +172,7 @@ async function signEIP1559Tx(params: EIP1559TxParams, privateKey: string): Promi
     // Convert private key to bytes
     const privKeyBytes = hexToBytes(privateKey);
 
-    // Sign with secp256k1, using 'recovered' format to get recovery bit
+    // Sign with secp256k1 - format 'recovered' returns 65 bytes: 32 r + 32 s + 1 recovery
     // prehash: false because we already hashed with keccak256
     const sigBytes = await secp256k1.signAsync(txHash, privKeyBytes, {
         lowS: true,
@@ -183,7 +183,7 @@ async function signEIP1559Tx(params: EIP1559TxParams, privateKey: string): Promi
     // Parse signature: 65 bytes = 32 bytes r + 32 bytes s + 1 byte recovery
     const r = BigInt(bytesToHex(sigBytes.slice(0, 32)));
     const s = BigInt(bytesToHex(sigBytes.slice(32, 64)));
-    const v = sigBytes[64];
+    const v = sigBytes[64]; // Recovery bit (0 or 1) for EIP-1559 type 2 transactions
 
     // Create signed transaction
     return serializeEIP1559Tx(params, { v, r, s });

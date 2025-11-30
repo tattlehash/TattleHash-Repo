@@ -127,6 +127,7 @@ async function handleAnchorJob(
         receiptId,
         chain: 'polygon' as const,
         createdAt: Date.now(),
+        attempts: (body.attempts as number) || 0,
     };
 
     // Anchor the record

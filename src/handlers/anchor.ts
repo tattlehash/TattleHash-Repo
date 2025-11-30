@@ -132,6 +132,7 @@ export async function postManualAnchor(
         receiptId,
         chain: 'polygon' as const,
         createdAt: Date.now(),
+        attempts: 0,
     };
 
     // Anchor the record
