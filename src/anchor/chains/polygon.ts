@@ -186,16 +186,6 @@ async function signEIP1559Tx(params: EIP1559TxParams, privateKey: string): Promi
     const s = sig.s;
     const v = sig.recovery ?? 0; // Recovery bit (0 or 1) for EIP-1559 type 2 transactions
 
-    // Debug logging
-    console.log(JSON.stringify({
-        at: 'sign_debug',
-        sigBytesLength: sigBytes.length,
-        r: r.toString(16).substring(0, 16) + '...',
-        s: s.toString(16).substring(0, 16) + '...',
-        v: v,
-        hasRecovery: sig.recovery !== undefined,
-    }));
-
     // Create signed transaction
     return serializeEIP1559Tx(params, { v, r, s });
 }
