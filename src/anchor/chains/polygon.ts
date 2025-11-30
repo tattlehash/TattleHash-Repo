@@ -180,6 +180,16 @@ async function signEIP1559Tx(params: EIP1559TxParams, privateKey: string): Promi
         format: 'recovered'
     });
 
+    // Debug logging
+    console.log(JSON.stringify({
+        at: 'sign_debug',
+        sigBytesLength: sigBytes.length,
+        firstByte: sigBytes[0],
+        lastByte: sigBytes[sigBytes.length - 1],
+        byte64: sigBytes[64],
+        txHashLength: txHash.length,
+    }));
+
     // Parse signature: 65 bytes = 32 bytes r + 32 bytes s + 1 byte recovery
     const r = BigInt(bytesToHex(sigBytes.slice(0, 32)));
     const s = BigInt(bytesToHex(sigBytes.slice(32, 64)));
