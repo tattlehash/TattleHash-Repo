@@ -50,6 +50,86 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     return ok(result, { status: result.ok ? 200 : 500 });
   }
 
+  // ============================================================================
+  // Auth & Account Routes
+  // ============================================================================
+
+  // Registration
+  if (req.method === "POST" && pathname === "/auth/register") {
+    const { postRegister } = await import("./handlers/account");
+    return postRegister(req, env);
+  }
+
+  // Email/password login
+  if (req.method === "POST" && pathname === "/auth/login") {
+    const { postLogin } = await import("./handlers/account");
+    return postLogin(req, env);
+  }
+
+  // Wallet login
+  if (req.method === "POST" && pathname === "/auth/login/wallet") {
+    const { postWalletLogin } = await import("./handlers/account");
+    return postWalletLogin(req, env);
+  }
+
+  // Email verification
+  if (req.method === "POST" && pathname === "/auth/verify-email") {
+    const { postVerifyEmail } = await import("./handlers/account");
+    return postVerifyEmail(req, env);
+  }
+
+  // Password reset request
+  if (req.method === "POST" && pathname === "/auth/forgot-password") {
+    const { postForgotPassword } = await import("./handlers/account");
+    return postForgotPassword(req, env);
+  }
+
+  // Password reset
+  if (req.method === "POST" && pathname === "/auth/reset-password") {
+    const { postResetPassword } = await import("./handlers/account");
+    return postResetPassword(req, env);
+  }
+
+  // Get current user profile
+  if (req.method === "GET" && pathname === "/auth/me") {
+    const { getMe } = await import("./handlers/account");
+    return getMe(req, env);
+  }
+
+  // Update profile
+  if (req.method === "PATCH" && pathname === "/auth/profile") {
+    const { patchProfile } = await import("./handlers/account");
+    return patchProfile(req, env);
+  }
+
+  // Get preferences
+  if (req.method === "GET" && pathname === "/auth/preferences") {
+    const { getPreferences } = await import("./handlers/account");
+    return getPreferences(req, env);
+  }
+
+  // Update preferences
+  if (req.method === "PATCH" && pathname === "/auth/preferences") {
+    const { patchPreferences } = await import("./handlers/account");
+    return patchPreferences(req, env);
+  }
+
+  // Link wallet to account
+  if (req.method === "POST" && pathname === "/auth/link-wallet") {
+    const { postLinkWallet } = await import("./handlers/account");
+    return postLinkWallet(req, env);
+  }
+
+  // Logout
+  if (req.method === "POST" && pathname === "/auth/logout") {
+    const { postLogout } = await import("./handlers/account");
+    return postLogout(req, env);
+  }
+
+  // ============================================================================
+  // Attestation
+  // ============================================================================
+
   // Attest
   if (req.method === "POST" && pathname === "/attest") return postAttest(req, env);
 

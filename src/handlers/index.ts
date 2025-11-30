@@ -53,5 +53,8 @@ export * from './queue';
 // Sweep (maintenance)
 export * from './sweep';
 
+// Account & Auth
+export * from './account';
+
 // Admin handlers
 export * as admin from './admin';
