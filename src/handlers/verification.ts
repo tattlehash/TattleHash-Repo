@@ -544,7 +544,7 @@ export async function getVerifyPortal(
         <div class="card">
             <div class="tabs">
                 <div class="tab active" data-tab="hash">Enter Hash</div>
-                <div class="tab" data-tab="upload">Upload PDF</div>
+                <div class="tab" data-tab="upload">Upload File</div>
             </div>
 
             <form id="verify-form" method="GET" action="/verify/portal">
@@ -559,13 +559,13 @@ export async function getVerifyPortal(
 
                 <div id="upload-tab" class="tab-content">
                     <div class="form-group">
-                        <label>Upload PDF to Extract Hash</label>
-                        <div class="file-upload" id="file-upload">
-                            <input type="file" id="file-input" accept=".pdf,application/pdf">
-                            <div class="file-upload-icon">📄</div>
+                        <label>Upload File or Paste Screenshot</label>
+                        <div class="file-upload" id="file-upload" tabindex="0">
+                            <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp">
+                            <div class="file-upload-icon" id="file-icon">📄</div>
                             <div class="file-upload-text">
-                                <strong>Click to upload</strong> or drag and drop<br>
-                                PDF files only
+                                <strong>Click to upload</strong>, drag and drop, or <strong>Ctrl+V</strong> to paste<br>
+                                PDF or image files (JPEG, PNG, WEBP)
                             </div>
                         </div>
                         <div class="file-info" id="file-info">
@@ -577,7 +577,7 @@ export async function getVerifyPortal(
                     <div class="how-it-works">
                         <h4>How it works</h4>
                         <ol>
-                            <li>Upload your TattleHash PDF dossier</li>
+                            <li>Upload your TattleHash PDF dossier or screenshot</li>
                             <li>We extract its SHA-256 hash locally (nothing leaves your browser)</li>
                             <li>The hash is verified against our blockchain records</li>
                         </ol>
@@ -615,9 +615,23 @@ export async function getVerifyPortal(
         const fileUpload = document.getElementById('file-upload');
         const fileInput = document.getElementById('file-input');
         const fileInfo = document.getElementById('file-info');
+        const fileIcon = document.getElementById('file-icon');
         const hashInput = document.getElementById('hash');
         const processing = document.getElementById('processing');
         const verifyBtn = document.getElementById('verify-btn');
+
+        // Accepted file types
+        const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+        function isAcceptedFile(file) {
+            return acceptedTypes.includes(file.type);
+        }
+
+        function getFileIcon(type) {
+            if (type === 'application/pdf') return '📄';
+            if (type.startsWith('image/')) return '🖼️';
+            return '📁';
+        }
 
         // Drag and drop
         ['dragenter', 'dragover'].forEach(e => {
@@ -634,14 +648,55 @@ export async function getVerifyPortal(
         });
         fileUpload.addEventListener('drop', (evt) => {
             const file = evt.dataTransfer.files[0];
-            if (file && file.type === 'application/pdf') {
+            if (file && isAcceptedFile(file)) {
                 processFile(file);
+            } else if (file) {
+                alert('Please upload a PDF or image file (JPEG, PNG, WEBP)');
             }
         });
 
         fileInput.addEventListener('change', (evt) => {
             if (evt.target.files[0]) {
                 processFile(evt.target.files[0]);
+            }
+        });
+
+        // Clipboard paste support (Ctrl+V / Cmd+V)
+        document.addEventListener('paste', async (evt) => {
+            const items = evt.clipboardData?.items;
+            if (!items) return;
+
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    evt.preventDefault();
+                    const file = item.getAsFile();
+                    if (file) {
+                        // Switch to upload tab if not already there
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        document.querySelector('[data-tab="upload"]').classList.add('active');
+                        document.getElementById('upload-tab').classList.add('active');
+
+                        processFile(file);
+                    }
+                    break;
+                }
+            }
+        });
+
+        // Also handle paste when file-upload area is focused
+        fileUpload.addEventListener('paste', async (evt) => {
+            evt.stopPropagation();
+            const items = evt.clipboardData?.items;
+            if (!items) return;
+
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    evt.preventDefault();
+                    const file = item.getAsFile();
+                    if (file) processFile(file);
+                    break;
+                }
             }
         });
 
@@ -657,8 +712,16 @@ export async function getVerifyPortal(
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-                // Update UI
-                document.getElementById('filename').textContent = file.name;
+                // Generate display name (handle pasted screenshots with generic names)
+                let displayName = file.name;
+                if (!displayName || displayName === 'image.png' || displayName === 'blob') {
+                    const ext = file.type.split('/')[1] || 'png';
+                    displayName = 'Pasted screenshot.' + ext;
+                }
+
+                // Update UI with appropriate icon
+                fileIcon.textContent = getFileIcon(file.type);
+                document.getElementById('filename').textContent = displayName;
                 document.getElementById('filesize').textContent = ' (' + formatBytes(file.size) + ')';
                 document.getElementById('extracted-hash').textContent = 'SHA-256: ' + hashHex;
                 fileInfo.classList.add('visible');
@@ -683,7 +746,7 @@ export async function getVerifyPortal(
         document.getElementById('verify-form').addEventListener('submit', (evt) => {
             if (!hashInput.value.trim()) {
                 evt.preventDefault();
-                alert('Please enter a document hash or upload a PDF file.');
+                alert('Please enter a document hash or upload a file (PDF, JPEG, PNG, or WEBP).');
             }
         });
     </script>
