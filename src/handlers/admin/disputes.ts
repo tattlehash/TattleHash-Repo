@@ -35,9 +35,10 @@ export async function listDisputes(
         );
 
         return ok({ disputes });
-    } catch (e: any) {
-        console.error('List disputes error:', e);
-        return err(500, 'INTERNAL_ERROR', { message: e.message });
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('List disputes error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -79,9 +80,10 @@ export async function getDispute(
             },
             challenge
         });
-    } catch (e: any) {
-        console.error('Get dispute error:', e);
-        return err(500, 'INTERNAL_ERROR', { message: e.message });
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Get dispute error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -173,16 +175,14 @@ export async function postResolveDispute(
             dispute_id: disputeId,
             winner: body.winner_user_id
         });
-    } catch (e: any) {
-        console.error('Resolve dispute error:', e);
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+    } catch (e: unknown) {
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        return err(500, 'INTERNAL_ERROR', { message: e.message });
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Resolve dispute error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 

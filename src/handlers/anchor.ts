@@ -1,6 +1,14 @@
+/**
+ * Anchor Handlers
+ *
+ * SECURITY: Anchor polling requires user authentication to prevent abuse.
+ * Unauthenticated users cannot query transaction confirmation status.
+ */
+
 import { ok, err } from '../lib/http';
 import { Env } from '../types';
 import { queryTransactionStatus } from '../anchor';
+import { requireAuth } from '../middleware/auth';
 
 type JsonDict = Record<string, unknown>;
 
@@ -36,7 +44,18 @@ async function queryTxStatus(
     };
 }
 
+/**
+ * POST /anchor/poll - Poll for transaction confirmation status
+ *
+ * SECURITY: Requires user authentication via Bearer token.
+ */
 export async function postAnchorPoll(req: Request, env: Env): Promise<Response> {
+    // Require user authentication
+    const authResponse = await requireAuth(req, env);
+    if (authResponse) {
+        return authResponse;
+    }
+
     try {
         const body = await safeJSON(req);
         const pending: PendingAnchor[] = Array.isArray(body?.pending)

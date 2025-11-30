@@ -35,7 +35,7 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
       headers: {
         "access-control-allow-origin": "*",
         "access-control-allow-headers": "content-type, authorization, idempotency-key, x-test-token",
-        "access-control-allow-methods": "GET,POST,OPTIONS",
+        "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
       },
     });
   }
@@ -96,6 +96,12 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     const { postCompleteChallenge } = await import("./handlers/challenges");
     return postCompleteChallenge(req, env, completeMatch.groups.id);
   }
+  // Challenge PDF Export
+  const challengeExportMatch = pathname.match(/^\/challenges\/(?<id>[a-zA-Z0-9-]+)\/export\/pdf$/);
+  if (req.method === "GET" && challengeExportMatch?.groups?.id) {
+    const { getChallengeExportPdf } = await import("./handlers/challenge-export");
+    return getChallengeExportPdf(req, env, challengeExportMatch.groups.id);
+  }
 
   // Game flow
   if (req.method === "POST" && pathname === "/game/create") {
@@ -112,6 +118,7 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
   }
 
   // ENF (Evidence-and-Forward)
+  // Legacy endpoints
   if (req.method === "POST" && pathname === "/enf/init") {
     const { postEnfInit } = await import("./handlers/enf");
     return postEnfInit(req, env);
@@ -119,6 +126,55 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
   if (req.method === "POST" && pathname === "/enf/action") {
     const { postEnfAction } = await import("./handlers/enf");
     return postEnfAction(req, env);
+  }
+  // New RESTful endpoints
+  if (req.method === "POST" && pathname === "/enf/bundles") {
+    const { postCreateEnfBundle } = await import("./handlers/enf");
+    return postCreateEnfBundle(req, env);
+  }
+  if (req.method === "GET" && pathname === "/enf/bundles") {
+    const { getListEnfBundles } = await import("./handlers/enf");
+    return getListEnfBundles(req, env);
+  }
+  const enfBundleMatch = pathname.match(/^\/enf\/bundles\/(?<id>[a-zA-Z0-9-]+)$/);
+  if (req.method === "GET" && enfBundleMatch?.groups?.id) {
+    const { getEnfBundleDetails } = await import("./handlers/enf");
+    return getEnfBundleDetails(req, env, enfBundleMatch.groups.id);
+  }
+  const enfSendMatch = pathname.match(/^\/enf\/bundles\/(?<id>[a-zA-Z0-9-]+)\/send$/);
+  if (req.method === "POST" && enfSendMatch?.groups?.id) {
+    const { postSendEnfBundle } = await import("./handlers/enf");
+    return postSendEnfBundle(req, env, enfSendMatch.groups.id);
+  }
+  const enfCancelMatch = pathname.match(/^\/enf\/bundles\/(?<id>[a-zA-Z0-9-]+)\/cancel$/);
+  if (req.method === "POST" && enfCancelMatch?.groups?.id) {
+    const { postCancelEnfBundle } = await import("./handlers/enf");
+    return postCancelEnfBundle(req, env, enfCancelMatch.groups.id);
+  }
+  const enfAuditMatch = pathname.match(/^\/enf\/bundles\/(?<id>[a-zA-Z0-9-]+)\/audit$/);
+  if (req.method === "GET" && enfAuditMatch?.groups?.id) {
+    const { getEnfAuditTrail } = await import("./handlers/enf");
+    return getEnfAuditTrail(req, env, enfAuditMatch.groups.id);
+  }
+  // ENF Bundle PDF Export
+  const enfExportPdfMatch = pathname.match(/^\/enf\/bundles\/(?<id>[a-zA-Z0-9-]+)\/export\/pdf$/);
+  if (req.method === "GET" && enfExportPdfMatch?.groups?.id) {
+    const { getEnfBundleExportPdf } = await import("./handlers/dossier");
+    return getEnfBundleExportPdf(req, env, enfExportPdfMatch.groups.id);
+  }
+  // Public recipient endpoints
+  const enfViewMatch = pathname.match(/^\/enf\/view\/(?<token>[a-zA-Z0-9_-]+)$/);
+  if (req.method === "GET" && enfViewMatch?.groups?.token) {
+    const { getEnfView } = await import("./handlers/enf");
+    return getEnfView(req, env, enfViewMatch.groups.token);
+  }
+  if (req.method === "POST" && pathname === "/enf/acknowledge") {
+    const { postEnfAcknowledge } = await import("./handlers/enf");
+    return postEnfAcknowledge(req, env);
+  }
+  if (req.method === "POST" && pathname === "/enf/decline") {
+    const { postEnfDecline } = await import("./handlers/enf");
+    return postEnfDecline(req, env);
   }
 
   // POF (Proof-of-Funds)
@@ -143,6 +199,253 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     return postAnchorPoll(req, env);
   }
 
+  // Enforced Mode - Full escrow with threshold logic
+  if (req.method === "POST" && pathname === "/enforced/challenges") {
+    const { postCreateEnforcedChallenge } = await import("./handlers/enforced");
+    return postCreateEnforcedChallenge(req, env);
+  }
+  const enforcedStakeMatch = pathname.match(/^\/enforced\/challenges\/(?<id>[a-zA-Z0-9-]+)\/stake$/);
+  if (req.method === "POST" && enforcedStakeMatch?.groups?.id) {
+    const { postDepositStake } = await import("./handlers/enforced");
+    return postDepositStake(req, env, enforcedStakeMatch.groups.id);
+  }
+  const enforcedAcceptMatch = pathname.match(/^\/enforced\/challenges\/(?<id>[a-zA-Z0-9-]+)\/accept$/);
+  if (req.method === "POST" && enforcedAcceptMatch?.groups?.id) {
+    const { postAcceptEnforced } = await import("./handlers/enforced");
+    return postAcceptEnforced(req, env, enforcedAcceptMatch.groups.id);
+  }
+  const enforcedCompleteMatch = pathname.match(/^\/enforced\/challenges\/(?<id>[a-zA-Z0-9-]+)\/complete$/);
+  if (req.method === "POST" && enforcedCompleteMatch?.groups?.id) {
+    const { postCompleteEnforced } = await import("./handlers/enforced");
+    return postCompleteEnforced(req, env, enforcedCompleteMatch.groups.id);
+  }
+  const enforcedDisputeMatch = pathname.match(/^\/enforced\/challenges\/(?<id>[a-zA-Z0-9-]+)\/dispute$/);
+  if (req.method === "POST" && enforcedDisputeMatch?.groups?.id) {
+    const { postRaiseDispute } = await import("./handlers/enforced");
+    return postRaiseDispute(req, env, enforcedDisputeMatch.groups.id);
+  }
+  const enforcedResolveMatch = pathname.match(/^\/enforced\/challenges\/(?<id>[a-zA-Z0-9-]+)\/resolve$/);
+  if (req.method === "POST" && enforcedResolveMatch?.groups?.id) {
+    const { postResolveDispute } = await import("./handlers/enforced");
+    return postResolveDispute(req, env, enforcedResolveMatch.groups.id);
+  }
+  const enforcedStatusMatch = pathname.match(/^\/enforced\/challenges\/(?<id>[a-zA-Z0-9-]+)\/status$/);
+  if (req.method === "GET" && enforcedStatusMatch?.groups?.id) {
+    const { getEnforcedStatus } = await import("./handlers/enforced");
+    return getEnforcedStatus(req, env, enforcedStatusMatch.groups.id);
+  }
+  const enforcedTimeoutMatch = pathname.match(/^\/enforced\/challenges\/(?<id>[a-zA-Z0-9-]+)\/check-timeout$/);
+  if (req.method === "POST" && enforcedTimeoutMatch?.groups?.id) {
+    const { postCheckTimeout } = await import("./handlers/enforced");
+    return postCheckTimeout(req, env, enforcedTimeoutMatch.groups.id);
+  }
+
+  // Webhooks - Subscription management
+  if (req.method === "GET" && pathname === "/webhooks/events") {
+    const { getWebhookEvents } = await import("./handlers/webhooks");
+    return getWebhookEvents(req, env);
+  }
+  if (req.method === "POST" && pathname === "/webhooks") {
+    const { postCreateWebhook } = await import("./handlers/webhooks");
+    return postCreateWebhook(req, env);
+  }
+  if (req.method === "GET" && pathname === "/webhooks") {
+    const { getListWebhooks } = await import("./handlers/webhooks");
+    return getListWebhooks(req, env);
+  }
+  const webhookMatch = pathname.match(/^\/webhooks\/(?<id>[a-zA-Z0-9-]+)$/);
+  if (req.method === "GET" && webhookMatch?.groups?.id) {
+    const { getWebhook } = await import("./handlers/webhooks");
+    return getWebhook(req, env, webhookMatch.groups.id);
+  }
+  if (req.method === "PATCH" && webhookMatch?.groups?.id) {
+    const { patchWebhook } = await import("./handlers/webhooks");
+    return patchWebhook(req, env, webhookMatch.groups.id);
+  }
+  if (req.method === "DELETE" && webhookMatch?.groups?.id) {
+    const { deleteWebhookHandler } = await import("./handlers/webhooks");
+    return deleteWebhookHandler(req, env, webhookMatch.groups.id);
+  }
+  const webhookRotateMatch = pathname.match(/^\/webhooks\/(?<id>[a-zA-Z0-9-]+)\/rotate-secret$/);
+  if (req.method === "POST" && webhookRotateMatch?.groups?.id) {
+    const { postRotateSecret } = await import("./handlers/webhooks");
+    return postRotateSecret(req, env, webhookRotateMatch.groups.id);
+  }
+  const webhookDeliveriesMatch = pathname.match(/^\/webhooks\/(?<id>[a-zA-Z0-9-]+)\/deliveries$/);
+  if (req.method === "GET" && webhookDeliveriesMatch?.groups?.id) {
+    const { getWebhookDeliveries } = await import("./handlers/webhooks");
+    return getWebhookDeliveries(req, env, webhookDeliveriesMatch.groups.id);
+  }
+
+  // LLM Monitoring
+  if (req.method === "POST" && pathname === "/monitoring/analyze") {
+    const { postAnalyze } = await import("./handlers/monitoring");
+    return postAnalyze(req, env);
+  }
+  if (req.method === "POST" && pathname === "/monitoring/analyze/challenge") {
+    const { postAnalyzeChallenge } = await import("./handlers/monitoring");
+    return postAnalyzeChallenge(req, env);
+  }
+  if (req.method === "GET" && pathname === "/monitoring/analyses") {
+    const { getListAnalyses } = await import("./handlers/monitoring");
+    return getListAnalyses(req, env);
+  }
+  const analysisMatch = pathname.match(/^\/monitoring\/analyses\/(?<id>[a-zA-Z0-9-]+)$/);
+  if (req.method === "GET" && analysisMatch?.groups?.id) {
+    const { getAnalysisDetails } = await import("./handlers/monitoring");
+    return getAnalysisDetails(req, env, analysisMatch.groups.id);
+  }
+  const riskScoreMatch = pathname.match(/^\/monitoring\/risk\/(?<type>[A-Z]+)\/(?<id>[a-zA-Z0-9-]+)$/);
+  if (req.method === "GET" && riskScoreMatch?.groups?.type && riskScoreMatch?.groups?.id) {
+    const { getRiskScoreEndpoint } = await import("./handlers/monitoring");
+    return getRiskScoreEndpoint(req, env, riskScoreMatch.groups.type, riskScoreMatch.groups.id);
+  }
+  const recommendedModeMatch = pathname.match(/^\/monitoring\/recommended-mode\/(?<type>[A-Z]+)\/(?<id>[a-zA-Z0-9-]+)$/);
+  if (req.method === "GET" && recommendedModeMatch?.groups?.type && recommendedModeMatch?.groups?.id) {
+    const { getRecommendedMode } = await import("./handlers/monitoring");
+    return getRecommendedMode(req, env, recommendedModeMatch.groups.type, recommendedModeMatch.groups.id);
+  }
+  if (req.method === "POST" && pathname === "/monitoring/scan-url") {
+    const { postScanUrl } = await import("./handlers/monitoring");
+    return postScanUrl(req, env);
+  }
+  if (req.method === "POST" && pathname === "/monitoring/scan-urls") {
+    const { postScanUrls } = await import("./handlers/monitoring");
+    return postScanUrls(req, env);
+  }
+  if (req.method === "POST" && pathname === "/monitoring/extract-urls") {
+    const { postExtractUrls } = await import("./handlers/monitoring");
+    return postExtractUrls(req, env);
+  }
+  if (req.method === "GET" && pathname === "/monitoring/flags") {
+    const { getListFlags } = await import("./handlers/monitoring");
+    return getListFlags(req, env);
+  }
+  const flagResolveMatch = pathname.match(/^\/monitoring\/flags\/(?<id>[a-zA-Z0-9-]+)\/resolve$/);
+  if (req.method === "PATCH" && flagResolveMatch?.groups?.id) {
+    const { patchResolveFlag } = await import("./handlers/monitoring");
+    return patchResolveFlag(req, env, flagResolveMatch.groups.id);
+  }
+
+  // ============================================================================
+  // Verification Portal
+  // ============================================================================
+
+  if (req.method === "GET" && pathname === "/verify") {
+    const { getVerify } = await import("./handlers/verification");
+    return getVerify(req, env);
+  }
+  if (req.method === "POST" && pathname === "/verify") {
+    const { postVerify } = await import("./handlers/verification");
+    return postVerify(req, env);
+  }
+  if (req.method === "GET" && pathname === "/verify/health") {
+    const { getVerifyHealth } = await import("./handlers/verification");
+    return getVerifyHealth(req, env);
+  }
+  if (req.method === "GET" && pathname === "/verify/stats") {
+    const { getVerifyStats } = await import("./handlers/verification");
+    return getVerifyStats(req, env);
+  }
+  if (req.method === "GET" && pathname === "/verify/portal") {
+    const { getVerifyPortal } = await import("./handlers/verification");
+    return getVerifyPortal(req, env);
+  }
+  if (req.method === "POST" && pathname === "/verify/proof") {
+    const { postVerifyProof } = await import("./handlers/verification");
+    return postVerifyProof(req, env);
+  }
+  const verifyTargetMatch = pathname.match(/^\/verify\/(?<type>ENF_BUNDLE|CHALLENGE|ATTESTATION)\/(?<id>[a-zA-Z0-9-]+)$/i);
+  if (req.method === "GET" && verifyTargetMatch?.groups?.type && verifyTargetMatch?.groups?.id) {
+    const { getVerifyByTarget } = await import("./handlers/verification");
+    return getVerifyByTarget(req, env, verifyTargetMatch.groups.type, verifyTargetMatch.groups.id);
+  }
+
+  // ============================================================================
+  // PDF Dossier Export
+  // ============================================================================
+
+  if (req.method === "GET" && pathname === "/dossier/intents") {
+    const { getExportIntents } = await import("./handlers/dossier");
+    return getExportIntents(req, env);
+  }
+  if (req.method === "POST" && pathname === "/dossier/export") {
+    const { postExportDossier } = await import("./handlers/dossier");
+    return postExportDossier(req, env);
+  }
+  if (req.method === "POST" && pathname === "/dossier/export/metadata") {
+    const { postExportMetadata } = await import("./handlers/dossier");
+    return postExportMetadata(req, env);
+  }
+
+  // ============================================================================
+  // Trust Score API
+  // ============================================================================
+
+  if (req.method === "GET" && pathname === "/trust-score/health") {
+    const { getTrustScoreHealth } = await import("./handlers/trust-score");
+    return getTrustScoreHealth(req, env);
+  }
+  if (req.method === "GET" && pathname === "/trust-score/thresholds") {
+    const { getTrustScoreThresholds } = await import("./handlers/trust-score");
+    return getTrustScoreThresholds(req, env);
+  }
+  if (req.method === "POST" && pathname === "/trust-score/batch") {
+    const { postBatchTrustScore } = await import("./handlers/trust-score");
+    return postBatchTrustScore(req, env);
+  }
+  const trustScoreHistoryMatch = pathname.match(/^\/trust-score\/(?<wallet>0x[a-fA-F0-9]{40})\/history$/);
+  if (req.method === "GET" && trustScoreHistoryMatch?.groups?.wallet) {
+    const { getTrustScoreHistoryHandler } = await import("./handlers/trust-score");
+    return getTrustScoreHistoryHandler(req, env, trustScoreHistoryMatch.groups.wallet);
+  }
+  const trustScoreMatch = pathname.match(/^\/trust-score\/(?<wallet>0x[a-fA-F0-9]{40})$/);
+  if (req.method === "GET" && trustScoreMatch?.groups?.wallet) {
+    const { getTrustScoreHandler } = await import("./handlers/trust-score");
+    return getTrustScoreHandler(req, env, trustScoreMatch.groups.wallet);
+  }
+
+  // ============================================================================
+  // Credits & Loyalty
+  // ============================================================================
+
+  if (req.method === "GET" && pathname === "/credits") {
+    const { getCreditsHandler } = await import("./handlers/credits");
+    return getCreditsHandler(req, env);
+  }
+  if (req.method === "POST" && pathname === "/credits/redeem") {
+    const { postRedeemCredits } = await import("./handlers/credits");
+    return postRedeemCredits(req, env);
+  }
+  if (req.method === "GET" && pathname === "/credits/milestones") {
+    const { getMilestonesHandler } = await import("./handlers/credits");
+    return getMilestonesHandler(req, env);
+  }
+  if (req.method === "GET" && pathname === "/credits/tiers") {
+    const { getTiersHandler } = await import("./handlers/credits");
+    return getTiersHandler(req, env);
+  }
+
+  // Referrals
+  if (req.method === "POST" && pathname === "/referral/send") {
+    const { postSendReferral } = await import("./handlers/credits");
+    return postSendReferral(req, env);
+  }
+  if (req.method === "POST" && pathname === "/referral/claim") {
+    const { postClaimReferral } = await import("./handlers/credits");
+    return postClaimReferral(req, env);
+  }
+  if (req.method === "GET" && pathname === "/referral/status") {
+    const { getReferralStatusHandler } = await import("./handlers/credits");
+    return getReferralStatusHandler(req, env);
+  }
+
+  // Promotions
+  if (req.method === "POST" && pathname === "/promotions/claim") {
+    const { postClaimPromotion } = await import("./handlers/credits");
+    return postClaimPromotion(req, env);
+  }
+
   // Admin routes (ALL protected by auth)
   if (pathname.startsWith("/admin/")) {
     // Require authentication for ALL admin routes (including sweep)
@@ -153,6 +456,27 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     if (req.method === "GET" && pathname === "/admin/status") return getStatus(req, env);
     if (req.method === "GET" && pathname === "/admin/metrics") return getMetrics(req, env);
     if (pathname.startsWith("/admin/disputes")) return handleDisputes(req, env);
+
+    // Admin: Promotions
+    if (req.method === "POST" && pathname === "/admin/promotions") {
+      const { postCreatePromotion } = await import("./handlers/credits");
+      return postCreatePromotion(req, env);
+    }
+    if (req.method === "GET" && pathname === "/admin/promotions") {
+      const { getListPromotions } = await import("./handlers/credits");
+      return getListPromotions(req, env);
+    }
+    const promoMatch = pathname.match(/^\/admin\/promotions\/(?<id>[a-zA-Z0-9-]+)$/);
+    if (promoMatch?.groups?.id) {
+      if (req.method === "GET") {
+        const { getPromotionDetails } = await import("./handlers/credits");
+        return getPromotionDetails(req, env, promoMatch.groups.id);
+      }
+      if (req.method === "PATCH") {
+        const { patchUpdatePromotion } = await import("./handlers/credits");
+        return patchUpdatePromotion(req, env, promoMatch.groups.id);
+      }
+    }
   }
 
   return err(404, "route_not_found", { method: req.method, pathname });

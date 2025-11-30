@@ -54,6 +54,19 @@ export interface AcceptChallengeInput {
     // Future: acceptance message, etc.
 }
 
+/**
+ * Trust Score attestation data included in verification results
+ */
+export interface TrustScoreAttestation {
+    wallet: string;
+    score: number;
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    trafficLight: 'GREEN' | 'YELLOW' | 'RED';
+    flagCount: number;
+    confidence: number;
+    assessedAt: string;
+}
+
 export interface VerificationResult {
     allPassed: boolean;
     creatorWallet: 'PENDING' | 'VERIFIED' | 'FAILED';
@@ -61,4 +74,9 @@ export interface VerificationResult {
     counterpartyWallet: 'PENDING' | 'VERIFIED' | 'FAILED';
     counterpartyFunds: 'PENDING' | 'PASSED' | 'FAILED';
     failures: string[];
+    /** Trust Score attestation metadata for both parties */
+    trustScores?: {
+        creator?: TrustScoreAttestation;
+        counterparty?: TrustScoreAttestation;
+    };
 }

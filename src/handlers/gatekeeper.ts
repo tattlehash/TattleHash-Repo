@@ -20,19 +20,17 @@ export async function postWalletChallenge(
         const data = WalletChallengeSchema.parse(body);
         const result = await createWalletChallenge(env, data);
         return ok(result, { status: 201 });
-    } catch (e: any) {
-        if (e.name === 'ZodError') {
-            return err(400, 'VALIDATION_ERROR', { errors: e.errors });
+    } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'ZodError') {
+            return err(400, 'VALIDATION_ERROR', { errors: (e as any).errors });
         }
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        console.error('Wallet challenge error:', e);
-        return err(500, 'INTERNAL_ERROR');
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Wallet challenge error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -50,19 +48,17 @@ export async function postWalletVerify(
         const data = WalletVerifySchema.parse(body);
         const result = await verifyWalletSignature(env, data);
         return ok(result);
-    } catch (e: any) {
-        if (e.name === 'ZodError') {
-            return err(400, 'VALIDATION_ERROR', { errors: e.errors });
+    } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'ZodError') {
+            return err(400, 'VALIDATION_ERROR', { errors: (e as any).errors });
         }
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        console.error('Wallet verify error:', e);
-        return err(500, 'INTERNAL_ERROR');
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Wallet verify error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -80,18 +76,16 @@ export async function postFundsCheck(
         const data = FundsCheckSchema.parse(body);
         const result = await checkFundsThreshold(env, data);
         return ok(result);
-    } catch (e: any) {
-        if (e.name === 'ZodError') {
-            return err(400, 'VALIDATION_ERROR', { errors: e.errors });
+    } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'ZodError') {
+            return err(400, 'VALIDATION_ERROR', { errors: (e as any).errors });
         }
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        console.error('Funds check error:', e);
-        return err(500, 'INTERNAL_ERROR');
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Funds check error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }

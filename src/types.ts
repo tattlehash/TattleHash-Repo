@@ -1,4 +1,4 @@
-import { D1Database, DurableObjectNamespace, KVNamespace, Queue } from '@cloudflare/workers-types';
+import { D1Database, DurableObjectNamespace, KVNamespace, Queue, R2Bucket } from '@cloudflare/workers-types';
 
 export interface Env {
   // D1 Database
@@ -12,6 +12,9 @@ export interface Env {
   ATT_KV: KVNamespace;
   GATE_KV: KVNamespace;
   SHIELD_KV: KVNamespace;
+
+  // R2 Buckets
+  TATTLEHASH_PDF_BUCKET?: R2Bucket;
 
   // Queue
   TATTLEHASH_QUEUE: Queue;
@@ -42,6 +45,9 @@ export interface Env {
   // Feature Flags
   TEST_TOKEN?: string;
   GATEKEEPER_V2_ENABLED?: string;
+
+  // Dossier Export
+  VERIFICATION_PORTAL_URL?: string;
 
   // Allow additional properties for flexibility
   [key: string]: unknown;

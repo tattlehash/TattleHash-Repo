@@ -35,10 +35,11 @@ export async function checkFundsThreshold(
         } else {
             throw createError('VALIDATION_ERROR', { field: 'asset_type' });
         }
-    } catch (e: any) {
-        if (e.code) throw e;
-        console.error('RPC error:', e);
-        throw createError('FUNDS_RPC_ERROR', { message: e.message });
+    } catch (e: unknown) {
+        if (e && typeof e === 'object' && 'code' in e) throw e;
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('RPC error:', message);
+        throw createError('FUNDS_RPC_ERROR', { message });
     }
 
     // Compare against threshold

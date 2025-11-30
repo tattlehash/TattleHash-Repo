@@ -1,8 +1,10 @@
 
 import { query } from '../../db';
 import { checkFundsThreshold } from '../funds/check';
-import type { Challenge, VerificationResult } from './types';
+import type { Challenge, VerificationResult, TrustScoreAttestation } from './types';
 import { Env } from '../../types';
+import { getTrustScore } from '../../trust-score';
+import { calculateWalletTrafficLight } from '../wallet/verify';
 
 export async function runGatekeeperVerification(
     env: Env,
@@ -84,9 +86,58 @@ export async function runGatekeeperVerification(
         result.failures.push('Counterparty funds check failed');
     }
 
+    // Fetch Trust Scores for attestation metadata
+    const creatorWallet = getCreatorWallet(requirements);
+    const counterpartyWallet = getCounterpartyWallet(requirements);
+
+    const [creatorTrustAttestation, counterpartyTrustAttestation] = await Promise.all([
+        creatorWallet ? fetchTrustScoreAttestation(env, creatorWallet, result.creatorWallet === 'VERIFIED') : null,
+        counterpartyWallet ? fetchTrustScoreAttestation(env, counterpartyWallet, result.counterpartyWallet === 'VERIFIED') : null,
+    ]);
+
+    result.trustScores = {
+        creator: creatorTrustAttestation ?? undefined,
+        counterparty: counterpartyTrustAttestation ?? undefined,
+    };
+
+    // Add Trust Score warnings to failures if needed
+    if (creatorTrustAttestation?.trafficLight === 'RED') {
+        result.failures.push(`Creator wallet has RED traffic light (Trust Score: ${creatorTrustAttestation.score})`);
+    }
+    if (counterpartyTrustAttestation?.trafficLight === 'RED') {
+        result.failures.push(`Counterparty wallet has RED traffic light (Trust Score: ${counterpartyTrustAttestation.score})`);
+    }
+
     result.allPassed = result.failures.length === 0;
 
     return result;
+}
+
+/**
+ * Fetch Trust Score and create attestation data.
+ */
+async function fetchTrustScoreAttestation(
+    env: Env,
+    wallet: string,
+    walletVerified: boolean
+): Promise<TrustScoreAttestation | null> {
+    try {
+        const score = await getTrustScore(env, wallet, false);
+        const trafficLight = calculateWalletTrafficLight(score, walletVerified);
+
+        return {
+            wallet,
+            score: score.trustScore,
+            riskLevel: score.riskLevel,
+            trafficLight,
+            flagCount: score.flags.length,
+            confidence: score.confidence,
+            assessedAt: new Date().toISOString(),
+        };
+    } catch (error) {
+        console.error(`Trust score attestation fetch failed for ${wallet}:`, error);
+        return null;
+    }
 }
 
 async function runFundsChecks(

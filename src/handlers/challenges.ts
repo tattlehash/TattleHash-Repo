@@ -36,19 +36,17 @@ export async function postCreateChallenge(
 
         const result = await createChallenge(env, data, userId);
         return ok(result, { status: 201 });
-    } catch (e: any) {
-        if (e.name === 'ZodError') {
-            return err(400, 'VALIDATION_ERROR', { errors: e.errors });
+    } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'ZodError') {
+            return err(400, 'VALIDATION_ERROR', { errors: (e as any).errors });
         }
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        console.error('Challenge creation error:', e);
-        return err(500, 'INTERNAL_ERROR');
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Challenge creation error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -71,16 +69,14 @@ export async function postSendChallenge(
     try {
         const result = await sendChallenge(env, challengeId, userId);
         return ok(result);
-    } catch (e: any) {
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+    } catch (e: unknown) {
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        console.error('Send challenge error:', e);
-        return err(500, 'INTERNAL_ERROR');
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Send challenge error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -106,19 +102,17 @@ export async function postAcceptChallenge(
 
         const result = await acceptChallenge(env, challengeId, data, userId);
         return ok(result);
-    } catch (e: any) {
-        if (e.name === 'ZodError') {
-            return err(400, 'VALIDATION_ERROR', { errors: e.errors });
+    } catch (e: unknown) {
+        if (e instanceof Error && e.name === 'ZodError') {
+            return err(400, 'VALIDATION_ERROR', { errors: (e as any).errors });
         }
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        console.error('Accept challenge error:', e);
-        return err(500, 'INTERNAL_ERROR');
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Accept challenge error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -141,16 +135,14 @@ export async function postCompleteChallenge(
     try {
         const result = await completeChallenge(env, challengeId, userId);
         return ok(result);
-    } catch (e: any) {
-        if (e.code) {
-            const error = createError(e.code as any, e.details);
-            return new Response(JSON.stringify({ error: error.message, ...e.details }), {
-                status: error.status,
-                headers: { 'content-type': 'application/json' }
-            });
+    } catch (e: unknown) {
+        if (e && typeof e === 'object' && 'code' in e) {
+            const error = createError((e as any).code, (e as any).details);
+            return err(error.status, error.code, { message: error.message, ...(e as any).details });
         }
-        console.error('Complete challenge error:', e);
-        return err(500, 'INTERNAL_ERROR');
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Complete challenge error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -182,8 +174,9 @@ export async function getChallenge(
         }
 
         return ok(result);
-    } catch (e: any) {
-        console.error('Get challenge error:', e);
-        return err(500, 'INTERNAL_ERROR');
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Get challenge error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }

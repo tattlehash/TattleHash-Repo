@@ -117,14 +117,18 @@ describe('Relay System', () => {
         // Should record failure in DB
         expect(mockDb.prepare).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO webhook_deliveries'));
 
-        // Should enqueue retry (deliverWebhook doesn't pass delaySeconds on first failure)
+        // Should enqueue retry with delay per ADR-007
         expect(mockQueue.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'webhook_retry',
                 delivery_id: expect.any(String),
                 subscription_id: 'sub_1',
                 event_type: 'test.event',
+                payload: expect.any(Object),
                 attempt: 1,
+            }),
+            expect.objectContaining({
+                delaySeconds: 60, // First retry delay per ADR-007
             })
         );
     });

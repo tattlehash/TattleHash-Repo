@@ -1,3 +1,20 @@
+import type { RiskLevel, TrustFlag } from '../trust-score';
+
+/**
+ * Trust Score summary included in Gatekeeper responses
+ */
+export interface TrustScoreSummary {
+    score: number;
+    riskLevel: RiskLevel;
+    flags: TrustFlag[];
+    confidence: number;
+    lastUpdated: string;
+}
+
+/**
+ * Traffic light state for wallet verification
+ */
+export type WalletTrafficLight = 'GREEN' | 'YELLOW' | 'RED';
 
 export interface WalletChallengeRequest {
     wallet_address: string;
@@ -23,6 +40,12 @@ export interface WalletVerifyResponse {
     user_id: string;
     token: string;
     token_expires_at: string;
+    /** Trust Score assessment for verified wallet */
+    trust_score: TrustScoreSummary;
+    /** Traffic light based on Trust Score + verification status */
+    traffic_light: WalletTrafficLight;
+    /** Recommendation based on traffic light */
+    recommendation: string;
 }
 
 export interface WalletVerificationChallenge {

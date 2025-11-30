@@ -1,5 +1,13 @@
+/**
+ * Governance Handlers
+ *
+ * SECURITY: Governance updates require admin authentication.
+ * Only administrators with valid ADMIN_SECRET can submit policy updates.
+ */
+
 import { ok, err } from '../lib/http';
 import { Env } from '../types';
+import { requireAdmin } from '../middleware/admin';
 
 type JsonDict = Record<string, unknown>;
 
@@ -29,7 +37,18 @@ function requireFields<T extends string>(obj: JsonDict, fields: T[]): void {
     }
 }
 
+/**
+ * POST /governance/update - Submit a governance policy update
+ *
+ * SECURITY: Requires admin authentication via Bearer token matching ADMIN_SECRET.
+ */
 export async function postGovernanceUpdate(req: Request, env: Env): Promise<Response> {
+    // Require admin authentication
+    const adminAuth = await requireAdmin(req, env);
+    if (!adminAuth.ok) {
+        return adminAuth.response;
+    }
+
     try {
         const body = await safeJSON(req);
         requireFields(body, ['policyUpdate']);

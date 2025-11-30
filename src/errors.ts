@@ -45,6 +45,29 @@ export const ERRORS = {
     CHALLENGE_NOT_COUNTERPARTY: { code: 'CHALLENGE_NOT_COUNTERPARTY', status: 403, message: 'User is not the designated counterparty' },
     CHALLENGE_SOLO_NO_COUNTERPARTY: { code: 'CHALLENGE_SOLO_NO_COUNTERPARTY', status: 400, message: 'SOLO mode cannot have a counterparty' },
     CHALLENGE_COUNTERPARTY_REQUIRED: { code: 'CHALLENGE_COUNTERPARTY_REQUIRED', status: 400, message: 'Counterparty required for non-SOLO modes' },
+
+    // Stakes (Enforced Mode)
+    STAKE_NOT_FOUND: { code: 'STAKE_NOT_FOUND', status: 404, message: 'Stake not found' },
+    STAKE_ALREADY_DEPOSITED: { code: 'STAKE_ALREADY_DEPOSITED', status: 409, message: 'Stake already deposited for this challenge' },
+    STAKE_INVALID_STATUS: { code: 'STAKE_INVALID_STATUS', status: 400, message: 'Invalid stake status for this operation' },
+    STAKE_CHAIN_NOT_ALLOWED: { code: 'STAKE_CHAIN_NOT_ALLOWED', status: 400, message: 'Chain not allowed for this challenge' },
+    STAKE_ASSET_NOT_ALLOWED: { code: 'STAKE_ASSET_NOT_ALLOWED', status: 400, message: 'Asset not allowed for this challenge' },
+    STAKE_AMOUNT_INSUFFICIENT: { code: 'STAKE_AMOUNT_INSUFFICIENT', status: 400, message: 'Stake amount does not meet minimum requirement' },
+    TRAFFIC_LIGHT_RED: { code: 'TRAFFIC_LIGHT_RED', status: 400, message: 'Cannot proceed - traffic light is RED' },
+
+    // ENF (Evidence-and-Forward)
+    ENF_NOT_FOUND: { code: 'ENF_NOT_FOUND', status: 404, message: 'ENF bundle not found' },
+    ENF_RECIPIENT_NOT_FOUND: { code: 'ENF_RECIPIENT_NOT_FOUND', status: 404, message: 'ENF recipient not found' },
+    ENF_INVALID_TOKEN: { code: 'ENF_INVALID_TOKEN', status: 400, message: 'Invalid delivery token' },
+    ENF_INVALID_TRANSITION: { code: 'ENF_INVALID_TRANSITION', status: 400, message: 'Invalid status transition' },
+    ENF_ALREADY_SENT: { code: 'ENF_ALREADY_SENT', status: 409, message: 'ENF bundle has already been sent' },
+    ENF_ALREADY_RESPONDED: { code: 'ENF_ALREADY_RESPONDED', status: 409, message: 'Already responded to this ENF' },
+    ENF_EXPIRED: { code: 'ENF_EXPIRED', status: 410, message: 'ENF bundle has expired' },
+    ENF_CANCELLED: { code: 'ENF_CANCELLED', status: 410, message: 'ENF bundle has been cancelled' },
+    ENF_CANNOT_CANCEL: { code: 'ENF_CANNOT_CANCEL', status: 400, message: 'Cannot cancel ENF in current state' },
+    ENF_NO_RECIPIENTS: { code: 'ENF_NO_RECIPIENTS', status: 400, message: 'ENF bundle has no recipients' },
+    ENF_SIGNATURE_REQUIRED: { code: 'ENF_SIGNATURE_REQUIRED', status: 400, message: 'Signature is required for this acknowledgment type' },
+    ENF_SIGNATURE_INVALID: { code: 'ENF_SIGNATURE_INVALID', status: 400, message: 'Invalid signature' },
 };
 
 export function createError(

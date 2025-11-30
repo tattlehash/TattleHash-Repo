@@ -62,9 +62,10 @@ export async function getStatus(
                 pending: webhookStats.results?.find((r: any) => r.status === 'PENDING')?.count || 0
             }
         });
-    } catch (e: any) {
-        console.error('Status check error:', e);
-        return err(500, 'INTERNAL_ERROR', { message: e.message });
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Status check error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }
 
@@ -107,8 +108,9 @@ export async function getMetrics(
                 ? ((avgVerification.avg_time_ms as number) / 3600000).toFixed(2)
                 : '0'
         });
-    } catch (e: any) {
-        console.error('Metrics error:', e);
-        return err(500, 'INTERNAL_ERROR', { message: e.message });
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Metrics error:', message);
+        return err(500, 'INTERNAL_ERROR', { message });
     }
 }

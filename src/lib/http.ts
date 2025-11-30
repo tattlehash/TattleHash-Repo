@@ -75,6 +75,24 @@ export function err(
 }
 
 /**
+ * Parse JSON body from request with error handling.
+ */
+export async function parseBody(
+  request: Request
+): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
+  try {
+    const text = await request.text();
+    if (!text) {
+      return { ok: false, error: 'Empty request body' };
+    }
+    const data = JSON.parse(text);
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: 'Invalid JSON' };
+  }
+}
+
+/**
  * Get default error message based on code or status
  */
 function getDefaultMessage(code: string, status: number): string {

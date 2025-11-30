@@ -25,6 +25,8 @@
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
     "@noble/secp256k1": "^3.0.0",
+    "pdf-lib": "^1.17.1",
+    "qrcode-generator": "^2.0.4",
     "zod": "^4.1.13"
   }
 }
