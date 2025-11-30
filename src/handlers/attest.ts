@@ -54,7 +54,7 @@ export async function postAttest(req: Request, env: Env): Promise<Response> {
     const receipt = makeReceipt(env, initiatorCommit);
 
     await env.ATT_KV.put(recKey(env, receipt.id), JSON.stringify(receipt));
-    await enqueue(env, { id: crypto.randomUUID(), receiptId: receipt.id });
+    await enqueue(env, { type: 'anchor', id: crypto.randomUUID(), receiptId: receipt.id });
 
     return ok({ ok: true, receipt });
 }

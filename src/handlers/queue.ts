@@ -1,6 +1,9 @@
 import { Env } from '../types';
 import { retryFailedDelivery } from '../relay/webhooks';
 import { runAnalysis, scanUrls, CreateAnalysisInput } from '../monitoring';
+import { anchorRecord } from '../anchor/service';
+import type { AttestRecord } from '../anchor/storage';
+import { recKey } from '../lib/kv';
 
 interface QueueMessageBody {
     type: string;
@@ -90,18 +93,78 @@ async function handleAnchorJob(
     env: Env
 ): Promise<void> {
     const receiptId = body.receiptId as string | undefined;
-    if (!receiptId) return;
+    if (!receiptId) {
+        console.error('Anchor job missing receiptId');
+        return;
+    }
 
-    // TODO: Implement actual anchoring logic
-    // For now, just mark as processed
-    await env.TATTLEHASH_KV.put(
-        `anchor:job:${receiptId}`,
-        JSON.stringify({
-            status: 'processed',
-            processedAt: Date.now(),
-        }),
-        { expirationTtl: 3600 }
-    );
+    console.log(JSON.stringify({
+        t: Date.now(),
+        at: 'anchor_job_started',
+        receipt_id: receiptId,
+    }));
+
+    // Get the receipt from KV
+    const receiptKey = recKey(env, receiptId);
+    const receiptData = await env.ATT_KV.get(receiptKey);
+
+    if (!receiptData) {
+        console.error(`Receipt not found: ${receiptId}`);
+        return;
+    }
+
+    const receipt = JSON.parse(receiptData) as AttestRecord;
+
+    // Skip if already anchored
+    if (receipt.mode === 'anchored') {
+        console.log(`Receipt already anchored: ${receiptId}`);
+        return;
+    }
+
+    // Create anchor job
+    const anchorJob = {
+        id: body.id as string || crypto.randomUUID(),
+        receiptId,
+        chain: 'polygon' as const,
+        createdAt: Date.now(),
+    };
+
+    // Anchor the record
+    const result = await anchorRecord(env, anchorJob, receipt);
+
+    if (result.ok && result.txHash) {
+        // Update receipt with anchor info
+        receipt.mode = 'anchored';
+        receipt.txHash = result.txHash;
+
+        // Save updated receipt
+        await env.ATT_KV.put(receiptKey, JSON.stringify(receipt));
+
+        console.log(JSON.stringify({
+            t: Date.now(),
+            at: 'anchor_job_completed',
+            receipt_id: receiptId,
+            tx_hash: result.txHash,
+        }));
+    } else {
+        console.error(JSON.stringify({
+            t: Date.now(),
+            at: 'anchor_job_failed',
+            receipt_id: receiptId,
+            error: result.error,
+        }));
+
+        // Store failure for retry/debugging
+        await env.TATTLEHASH_ERROR_KV.put(
+            `anchor:error:${receiptId}`,
+            JSON.stringify({
+                receiptId,
+                error: result.error,
+                failedAt: Date.now(),
+            }),
+            { expirationTtl: 86400 } // 24 hours
+        );
+    }
 }
 
 async function handleLlmAnalysisJob(
