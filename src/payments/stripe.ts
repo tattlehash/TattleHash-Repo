@@ -102,7 +102,7 @@ export async function createCheckoutSession(
     const cancelUrl = input.cancel_url || `${baseUrl}/payments/cancel`;
 
     const sessionParams: Record<string, unknown> = {
-        mode: product.type === 'subscription' ? 'subscription' : 'payment',
+        mode: 'payment',
         success_url: successUrl,
         cancel_url: cancelUrl,
         metadata: {
@@ -119,7 +119,6 @@ export async function createCheckoutSession(
                         description: product.description,
                     },
                     unit_amount: product.price_cents,
-                    ...(product.type === 'subscription' ? { recurring: { interval: 'month' } } : {}),
                 },
                 quantity: 1,
             },
@@ -233,11 +232,6 @@ export async function processWebhookEvent(
         case 'payment_intent.succeeded':
             // Log but don't process - we handle credits on checkout.session.completed
             return { processed: true, message: 'Payment intent logged' };
-
-        case 'customer.subscription.created':
-        case 'customer.subscription.updated':
-            // Handle subscription events for Pro tier
-            return { processed: true, message: 'Subscription event logged' };
 
         default:
             return { processed: false, message: `Unhandled event type: ${event.type}` };

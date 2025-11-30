@@ -140,7 +140,6 @@ export async function getProducts(
         price_cents: product.price_cents,
         price_display: `$${(product.price_cents / 100).toFixed(2)}`,
         credits: product.credits,
-        type: product.type,
     }));
 
     return ok({ products });

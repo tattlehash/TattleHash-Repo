@@ -15,7 +15,6 @@ export const STRIPE_PRODUCTS = {
         description: 'Single attestation with blockchain anchoring',
         price_cents: 99, // $0.99
         credits: 1,
-        type: 'one_time' as const,
     },
     FIRE: {
         mode: 'FIRE' as const,
@@ -23,7 +22,6 @@ export const STRIPE_PRODUCTS = {
         description: 'Fast-track attestation with priority processing',
         price_cents: 199, // $1.99
         credits: 1,
-        type: 'one_time' as const,
     },
     GATEKEEPER: {
         mode: 'GATEKEEPER' as const,
@@ -31,7 +29,6 @@ export const STRIPE_PRODUCTS = {
         description: 'Two-party attestation with challenge support',
         price_cents: 199, // $1.99
         credits: 1,
-        type: 'one_time' as const,
     },
     ENFORCED: {
         mode: 'ENFORCED' as const,
@@ -39,15 +36,6 @@ export const STRIPE_PRODUCTS = {
         description: 'Full enforcement with stake requirements',
         price_cents: 299, // $2.99
         credits: 1,
-        type: 'one_time' as const,
-    },
-    PRO: {
-        mode: 'PRO' as const,
-        name: 'Pro Subscription',
-        description: 'Monthly subscription with 10 credits',
-        price_cents: 999, // $9.99/month
-        credits: 10,
-        type: 'subscription' as const,
     },
 } as const;
 
@@ -58,7 +46,7 @@ export type ProductMode = keyof typeof STRIPE_PRODUCTS;
 // ============================================================================
 
 export const CreateCheckoutSchema = z.object({
-    mode: z.enum(['SOLO', 'FIRE', 'GATEKEEPER', 'ENFORCED', 'PRO']),
+    mode: z.enum(['SOLO', 'FIRE', 'GATEKEEPER', 'ENFORCED']),
     user_id: z.string().uuid(),
     success_url: z.string().url().optional(),
     cancel_url: z.string().url().optional(),
