@@ -8,7 +8,10 @@
 import { ok, err } from '../lib/http';
 import { Env } from '../types';
 import { queryTransactionStatus } from '../anchor';
+import { anchorRecord } from '../anchor/service';
+import type { AttestRecord } from '../anchor/storage';
 import { requireAuth } from '../middleware/auth';
+import { recKey } from '../lib/kv';
 
 type JsonDict = Record<string, unknown>;
 
@@ -85,5 +88,86 @@ export async function postAnchorPoll(req: Request, env: Env): Promise<Response> 
     } catch (e: unknown) {
         const error = e as { status?: number; code?: string; message?: string };
         return err(error.status ?? 500, error.code ?? 'INTERNAL_ERROR', { message: error.message });
+    }
+}
+
+/**
+ * POST /admin/anchor/:receiptId - Manually anchor a receipt
+ *
+ * SECURITY: Admin-only endpoint for testing/debugging.
+ */
+export async function postManualAnchor(
+    _req: Request,
+    env: Env,
+    receiptId: string
+): Promise<Response> {
+    console.log(JSON.stringify({
+        t: Date.now(),
+        at: 'manual_anchor_started',
+        receipt_id: receiptId,
+    }));
+
+    // Get the receipt from KV
+    const receiptKey = recKey(env, receiptId);
+    const receiptData = await env.ATT_KV.get(receiptKey);
+
+    if (!receiptData) {
+        return err(404, 'RECEIPT_NOT_FOUND', { receipt_id: receiptId });
+    }
+
+    const receipt = JSON.parse(receiptData) as AttestRecord;
+
+    // Check if already anchored
+    if (receipt.mode === 'anchored' && receipt.txHash) {
+        return ok({
+            already_anchored: true,
+            receipt_id: receiptId,
+            tx_hash: receipt.txHash,
+        });
+    }
+
+    // Create anchor job
+    const anchorJob = {
+        id: crypto.randomUUID(),
+        receiptId,
+        chain: 'polygon' as const,
+        createdAt: Date.now(),
+    };
+
+    // Anchor the record
+    const result = await anchorRecord(env, anchorJob, receipt);
+
+    if (result.ok && result.txHash) {
+        // Update receipt with anchor info
+        receipt.mode = 'anchored';
+        receipt.txHash = result.txHash;
+
+        // Save updated receipt
+        await env.ATT_KV.put(receiptKey, JSON.stringify(receipt));
+
+        console.log(JSON.stringify({
+            t: Date.now(),
+            at: 'manual_anchor_completed',
+            receipt_id: receiptId,
+            tx_hash: result.txHash,
+        }));
+
+        return ok({
+            anchored: true,
+            receipt_id: receiptId,
+            tx_hash: result.txHash,
+        });
+    } else {
+        console.error(JSON.stringify({
+            t: Date.now(),
+            at: 'manual_anchor_failed',
+            receipt_id: receiptId,
+            error: result.error,
+        }));
+
+        return err(500, 'ANCHOR_FAILED', {
+            receipt_id: receiptId,
+            error: result.error,
+        });
     }
 }

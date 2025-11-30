@@ -533,6 +533,14 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     if (!adminCheck.ok) return adminCheck.response;
 
     if (req.method === "POST" && pathname === "/admin/sweep") return postSweep(req, env);
+
+    // Manual anchor endpoint for testing
+    const anchorMatch = pathname.match(/^\/admin\/anchor\/(?<receiptId>[a-zA-Z0-9-]+)$/);
+    if (req.method === "POST" && anchorMatch?.groups?.receiptId) {
+      const { postManualAnchor } = await import("./handlers/anchor");
+      return postManualAnchor(req, env, anchorMatch.groups.receiptId);
+    }
+
     if (req.method === "GET" && pathname === "/admin/status") return getStatus(req, env);
     if (req.method === "GET" && pathname === "/admin/metrics") return getMetrics(req, env);
     if (pathname.startsWith("/admin/disputes")) return handleDisputes(req, env);
