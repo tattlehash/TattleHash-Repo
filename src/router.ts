@@ -183,6 +183,13 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     return getChallengeExportPdf(req, env, challengeExportMatch.groups.id);
   }
 
+  // Coin Toss - Get status for a challenge
+  const coinTossStatusMatch = pathname.match(/^\/challenges\/(?<id>[a-zA-Z0-9-]+)\/coin-toss$/);
+  if (req.method === "GET" && coinTossStatusMatch?.groups?.id) {
+    const { getCoinTossStatusHandler } = await import("./handlers/coin-toss");
+    return getCoinTossStatusHandler(req, env, coinTossStatusMatch.groups.id);
+  }
+
   // Game flow
   if (req.method === "POST" && pathname === "/game/create") {
     const { postGameCreate } = await import("./handlers/game");
@@ -439,6 +446,13 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
   if (req.method === "GET" && verifyTargetMatch?.groups?.type && verifyTargetMatch?.groups?.id) {
     const { getVerifyByTarget } = await import("./handlers/verification");
     return getVerifyByTarget(req, env, verifyTargetMatch.groups.type, verifyTargetMatch.groups.id);
+  }
+
+  // Coin Toss Verification (public - anyone can verify fairness)
+  const verifyCoinTossMatch = pathname.match(/^\/verify\/coin-toss\/(?<id>[a-zA-Z0-9-]+)$/);
+  if (req.method === "GET" && verifyCoinTossMatch?.groups?.id) {
+    const { getCoinTossVerificationHandler } = await import("./handlers/coin-toss");
+    return getCoinTossVerificationHandler(req, env, verifyCoinTossMatch.groups.id);
   }
 
   // ============================================================================

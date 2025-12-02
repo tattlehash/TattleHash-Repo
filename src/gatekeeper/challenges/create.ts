@@ -2,6 +2,7 @@
 import { execute, queryOne } from '../../db';
 import { createError } from '../../errors';
 import { emitEvent } from '../../relay';
+import { initializeCoinToss } from '../../coin-toss';
 import type { Challenge, CreateChallengeInput } from './types';
 import { Env } from '../../types';
 
@@ -16,13 +17,19 @@ export async function createChallenge(
     // Validate mode-specific requirements
     validateModeRequirements(input);
 
+    // Validate fee arrangement requirements
+    validateFeeArrangement(input);
+
+    // Determine fee arrangement (default to creator_pays)
+    const feeArrangement = input.fee_arrangement ?? 'creator_pays';
+
     // Insert challenge
     await execute(
         env.TATTLEHASH_DB,
         `INSERT INTO challenges (
       id, mode, creator_user_id, counterparty_user_id,
-      title, description, status, expires_at, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      title, description, status, expires_at, created_at, updated_at, fee_arrangement
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             id,
             input.mode,
@@ -34,12 +41,18 @@ export async function createChallenge(
             input.expires_at ?? null,
             createdAt,
             createdAt,
+            feeArrangement,
         ]
     );
 
     // Insert gatekeeper requirements if provided
     if (input.gatekeeper_requirements) {
         await insertGatekeeperRequirements(env, id, creatorUserId, input.gatekeeper_requirements);
+    }
+
+    // Initialize coin toss if fee arrangement is coin_toss
+    if (feeArrangement === 'coin_toss' && input.coin_toss_call) {
+        await initializeCoinToss(env, id, input.coin_toss_call);
     }
 
     const challenge = await getChallengeById(env, id);
@@ -70,6 +83,32 @@ function validateModeRequirements(input: CreateChallengeInput): void {
         throw createError('VALIDATION_ERROR', {
             field: 'counterparty_user_id',
             message: 'Counterparty required for non-SOLO modes'
+        });
+    }
+}
+
+function validateFeeArrangement(input: CreateChallengeInput): void {
+    // Fee arrangement only applies to GATEKEEPER and ENFORCED modes
+    if (input.fee_arrangement && !['GATEKEEPER', 'ENFORCED'].includes(input.mode)) {
+        throw createError('VALIDATION_ERROR', {
+            field: 'fee_arrangement',
+            message: 'Fee arrangement only applies to GATEKEEPER and ENFORCED modes'
+        });
+    }
+
+    // If coin_toss is selected, must provide a call
+    if (input.fee_arrangement === 'coin_toss' && !input.coin_toss_call) {
+        throw createError('VALIDATION_ERROR', {
+            field: 'coin_toss_call',
+            message: 'Must choose heads or tails when using coin toss fee arrangement'
+        });
+    }
+
+    // If coin_toss_call is provided, fee_arrangement must be coin_toss
+    if (input.coin_toss_call && input.fee_arrangement !== 'coin_toss') {
+        throw createError('VALIDATION_ERROR', {
+            field: 'coin_toss_call',
+            message: 'Coin toss call only valid with coin_toss fee arrangement'
         });
     }
 }

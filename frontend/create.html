@@ -105,6 +105,70 @@
                     </div>
                 </div>
 
+                <!-- Fee Arrangement Section (for Gatekeeper/Enforced) -->
+                <div id="fee-arrangement-section" class="form-section hidden">
+                    <h3 class="form-section-title">Fee Arrangement</h3>
+                    <p class="form-hint mb-md">Choose how the attestation fee will be split between parties</p>
+
+                    <div class="fee-arrangement-grid">
+                        <div class="fee-option card card-glow" data-fee="creator_pays" onclick="selectFeeArrangement('creator_pays')">
+                            <div class="fee-option-icon">💵</div>
+                            <div class="fee-option-name">I'll Pay</div>
+                            <div class="fee-option-desc">You pay the full fee</div>
+                        </div>
+
+                        <div class="fee-option card card-glow" data-fee="counterparty_pays" onclick="selectFeeArrangement('counterparty_pays')">
+                            <div class="fee-option-icon">📤</div>
+                            <div class="fee-option-name">They Pay</div>
+                            <div class="fee-option-desc">Counterparty pays (pending acceptance)</div>
+                        </div>
+
+                        <div class="fee-option card card-glow" data-fee="split" onclick="selectFeeArrangement('split')">
+                            <div class="fee-option-icon">⚖️</div>
+                            <div class="fee-option-name">Split 50/50</div>
+                            <div class="fee-option-desc">Each party pays half</div>
+                        </div>
+
+                        <div class="fee-option card card-glow" data-fee="coin_toss" onclick="selectFeeArrangement('coin_toss')">
+                            <div class="fee-option-icon">🪙</div>
+                            <div class="fee-option-name">Coin Toss</div>
+                            <div class="fee-option-desc">Flip for it - sponsoring party pays all</div>
+                        </div>
+                    </div>
+
+                    <!-- Coin Toss Call Section -->
+                    <div id="coin-toss-call-section" class="hidden mt-lg">
+                        <h4 class="form-section-title">Call It!</h4>
+                        <p class="form-hint mb-md">Choose heads or tails. Your counterparty gets the opposite.</p>
+
+                        <div class="coin-call-grid">
+                            <div class="coin-call-option card card-glow" data-call="heads" onclick="selectCoinCall('heads')">
+                                <div class="coin-call-icon">
+                                    <div class="coin heads">H</div>
+                                </div>
+                                <div class="coin-call-name">Heads</div>
+                            </div>
+
+                            <div class="coin-call-option card card-glow" data-call="tails" onclick="selectCoinCall('tails')">
+                                <div class="coin-call-icon">
+                                    <div class="coin tails">T</div>
+                                </div>
+                                <div class="coin-call-name">Tails</div>
+                            </div>
+                        </div>
+
+                        <div class="coin-toss-explainer card mt-md" style="background: var(--bg-secondary);">
+                            <p><strong>How it works:</strong></p>
+                            <ul style="margin-top: 8px; padding-left: 20px;">
+                                <li>When your counterparty accepts, the coin is flipped</li>
+                                <li>Randomness comes from the blockchain anchor transaction</li>
+                                <li>The party who "loses" sponsors (pays) the full fee</li>
+                                <li>Result is provably fair and verifiable on-chain</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Transaction Details -->
                 <div class="form-section">
                     <h3 class="form-section-title">Transaction Details</h3>
@@ -192,6 +256,9 @@
     <script src="js/app.js"></script>
     <script>
         let selectedMode = null;
+        let selectedFeeArrangement = 'creator_pays';
+        let selectedCoinCall = null;
+
         const PRICES = {
             SOLO: { price: '$0.99', cents: 99 },
             FIRE: { price: '$1.99', cents: 199 },
@@ -234,12 +301,19 @@
 
             // Show/hide sections based on mode
             const counterpartySection = document.getElementById('counterparty-section');
+            const feeArrangementSection = document.getElementById('fee-arrangement-section');
             const stakeSection = document.getElementById('stake-section');
 
             if (mode === 'GATEKEEPER' || mode === 'ENFORCED') {
                 counterpartySection.classList.remove('hidden');
+                feeArrangementSection.classList.remove('hidden');
+                // Default to creator_pays
+                selectFeeArrangement('creator_pays');
             } else {
                 counterpartySection.classList.add('hidden');
+                feeArrangementSection.classList.add('hidden');
+                selectedFeeArrangement = 'creator_pays';
+                selectedCoinCall = null;
             }
 
             if (mode === 'ENFORCED') {
@@ -249,9 +323,64 @@
             }
 
             // Enable submit button
+            updateSubmitButton();
+        }
+
+        function selectFeeArrangement(arrangement) {
+            selectedFeeArrangement = arrangement;
+
+            // Update UI
+            document.querySelectorAll('.fee-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`.fee-option[data-fee="${arrangement}"]`).classList.add('selected');
+
+            // Show/hide coin toss call section
+            const coinTossCallSection = document.getElementById('coin-toss-call-section');
+            if (arrangement === 'coin_toss') {
+                coinTossCallSection.classList.remove('hidden');
+                selectedCoinCall = null; // Reset selection
+                document.querySelectorAll('.coin-call-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+            } else {
+                coinTossCallSection.classList.add('hidden');
+                selectedCoinCall = null;
+            }
+
+            updateSubmitButton();
+        }
+
+        function selectCoinCall(call) {
+            selectedCoinCall = call;
+
+            // Update UI
+            document.querySelectorAll('.coin-call-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.querySelector(`.coin-call-option[data-call="${call}"]`).classList.add('selected');
+
+            updateSubmitButton();
+        }
+
+        function updateSubmitButton() {
             const submitBtn = document.getElementById('submit-btn');
+
+            if (!selectedMode) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Select a Mode to Continue';
+                return;
+            }
+
+            // For coin toss, require a call to be selected
+            if (selectedFeeArrangement === 'coin_toss' && !selectedCoinCall) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Choose Heads or Tails';
+                return;
+            }
+
             submitBtn.disabled = false;
-            submitBtn.textContent = `Pay ${PRICES[mode].price} & Create`;
+            submitBtn.textContent = `Pay ${PRICES[selectedMode].price} & Create`;
         }
 
         async function handleCreateAttestation(event) {
@@ -259,6 +388,12 @@
 
             if (!selectedMode) {
                 showToast('Please select a mode', 'error');
+                return;
+            }
+
+            // Validate coin toss selection
+            if (selectedFeeArrangement === 'coin_toss' && !selectedCoinCall) {
+                showToast('Please choose heads or tails', 'error');
                 return;
             }
 
@@ -297,6 +432,14 @@
 
             if (form.stake_amount?.value) {
                 data.stake_amount = parseFloat(form.stake_amount.value);
+            }
+
+            // Add fee arrangement for Gatekeeper/Enforced modes
+            if (selectedMode === 'GATEKEEPER' || selectedMode === 'ENFORCED') {
+                data.fee_arrangement = selectedFeeArrangement;
+                if (selectedFeeArrangement === 'coin_toss') {
+                    data.coin_toss_call = selectedCoinCall;
+                }
             }
 
             // Reset error

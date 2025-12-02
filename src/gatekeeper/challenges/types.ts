@@ -1,3 +1,4 @@
+import type { FeeArrangement, CoinSide } from '../../coin-toss';
 
 export type ChallengeStatus =
     | 'DRAFT'
@@ -12,6 +13,9 @@ export type ChallengeStatus =
 
 export type ChallengeMode = 'SOLO' | 'GATEKEEPER' | 'FIRE' | 'ENFORCED';
 
+// Re-export for convenience
+export type { FeeArrangement, CoinSide };
+
 export interface Challenge {
     id: string;
     mode: ChallengeMode;
@@ -25,6 +29,8 @@ export interface Challenge {
     resolved_at?: number;
     created_at: number;
     updated_at: number;
+    /** Fee arrangement for Gatekeeper/Enforced modes */
+    fee_arrangement?: FeeArrangement;
 }
 
 export interface GatekeeperRequirement {
@@ -48,6 +54,10 @@ export interface CreateChallengeInput {
         creator?: GatekeeperRequirement;
         counterparty?: GatekeeperRequirement;
     };
+    /** Fee arrangement for Gatekeeper/Enforced modes. Defaults to 'creator_pays'. */
+    fee_arrangement?: FeeArrangement;
+    /** If fee_arrangement is 'coin_toss', the creator's call (heads or tails) */
+    coin_toss_call?: CoinSide;
 }
 
 export interface AcceptChallengeInput {

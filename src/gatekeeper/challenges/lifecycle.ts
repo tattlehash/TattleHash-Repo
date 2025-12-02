@@ -5,6 +5,7 @@ import { validateTransition } from './transitions';
 import { getChallengeById } from './create';
 import { runGatekeeperVerification } from './verification';
 import { emitEvent } from '../../relay';
+import { markCounterpartyAccepted, getCoinToss } from '../../coin-toss';
 import type { Challenge, ChallengeStatus, AcceptChallengeInput } from './types';
 import { Env } from '../../types';
 
@@ -50,6 +51,11 @@ export async function acceptChallenge(
     if (challenge.expires_at && new Date(challenge.expires_at) < new Date()) {
         await transitionStatus(env, challenge, 'EXPIRED');
         throw createError('CHALLENGE_EXPIRED');
+    }
+
+    // Mark coin toss as accepted if this challenge uses coin toss fee arrangement
+    if (challenge.fee_arrangement === 'coin_toss') {
+        await markCounterpartyAccepted(env, challengeId);
     }
 
     await transitionStatus(env, challenge, 'AWAITING_GATEKEEPER');
