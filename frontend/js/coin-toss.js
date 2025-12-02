@@ -76,7 +76,7 @@ class CoinTossAnimation {
                 <div class="coin-toss-content">
                     <div class="coin-pending">
                         <div class="coin-icon-large">
-                            <div class="coin ${this.state.creator_call}">${this.state.creator_call === 'heads' ? 'H' : 'T'}</div>
+                            <div class="coin ${this.state.creator_call}"></div>
                         </div>
                         <h2 class="coin-toss-title">Coin Toss Pending</h2>
                         <p class="coin-toss-subtitle">You called: <strong>${this.state.creator_call.toUpperCase()}</strong></p>
@@ -99,7 +99,7 @@ class CoinTossAnimation {
                 <div class="coin-toss-content">
                     <div class="coin-waiting">
                         <div class="coin-icon-large pulse">
-                            <div class="coin ${this.state.creator_call}">${this.state.creator_call === 'heads' ? 'H' : 'T'}</div>
+                            <div class="coin ${this.state.creator_call}"></div>
                         </div>
                         <h2 class="coin-toss-title">Waiting for Counterparty</h2>
                         <p class="coin-toss-subtitle">You called: <strong>${this.state.creator_call.toUpperCase()}</strong></p>
@@ -122,8 +122,8 @@ class CoinTossAnimation {
                 <div class="coin-toss-content">
                     <div class="coin-flip-container" id="flip-container">
                         <div class="coin-flipping" id="flipping-coin">
-                            <div class="coin heads front">H</div>
-                            <div class="coin tails back">T</div>
+                            <div class="coin heads front"></div>
+                            <div class="coin tails back"></div>
                         </div>
                         <p class="flip-status" id="flip-status">Flipping...</p>
                     </div>
@@ -195,7 +195,7 @@ class CoinTossAnimation {
         const resultHtml = isSponsor ? `
             <div class="coin-result ${resultClass}">
                 <div class="result-coin">
-                    <div class="coin ${this.state.result} large bounce">${this.state.result === 'heads' ? 'H' : 'T'}</div>
+                    <div class="coin ${this.state.result} large bounce"></div>
                 </div>
                 <div class="result-badge">${this.state.result.toUpperCase()}</div>
                 <h2 class="result-title">You're Sponsoring This Attestation</h2>
@@ -211,7 +211,7 @@ class CoinTossAnimation {
         ` : `
             <div class="coin-result ${resultClass}">
                 <div class="result-coin">
-                    <div class="coin ${this.state.result} large bounce">${this.state.result === 'heads' ? 'H' : 'T'}</div>
+                    <div class="coin ${this.state.result} large bounce"></div>
                 </div>
                 <div class="result-badge">${this.state.result.toUpperCase()}</div>
                 <h2 class="result-title">Sponsored by Your Counterparty</h2>

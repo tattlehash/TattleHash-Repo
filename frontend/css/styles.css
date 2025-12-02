@@ -1642,13 +1642,19 @@ textarea.form-input {
 }
 
 .coin.heads {
-    background: linear-gradient(145deg, #ffd700 0%, #ffb800 50%, #cc9600 100%);
-    border-color: #ffb800;
+    background: url('../assets/tattlehash-head-2.png') center center / cover;
+    border-color: var(--accent-cyan);
+    box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.4),
+        0 0 15px var(--accent-glow);
 }
 
 .coin.tails {
-    background: linear-gradient(145deg, #c0c0c0 0%, #a0a0a0 50%, #808080 100%);
-    border-color: #a0a0a0;
+    background: url('../assets/tattlehash-head-1.png') center center / cover;
+    border-color: var(--chrome-mid);
+    box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.4),
+        inset 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .coin-toss-explainer {
