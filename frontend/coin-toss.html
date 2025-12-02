@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Toss - TattleHash</title>
+    <meta name="description" content="Provably fair coin toss for fee-splitting.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪙</text></svg>">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🛡️</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="detail-page">
+        <div class="container" style="max-width: 600px;">
+            <!-- Loading State -->
+            <div id="loading-state" class="animate-fade-in">
+                <div class="card" style="text-align: center; padding: 64px;">
+                    <div class="coin-icon-large pulse">
+                        <div class="coin">🪙</div>
+                    </div>
+                    <p class="text-muted">Loading coin toss...</p>
+                </div>
+            </div>
+
+            <!-- Coin Toss Container -->
+            <div id="coin-toss-display" class="hidden"></div>
+
+            <!-- Demo Controls (for testing) -->
+            <div id="demo-controls" class="hidden" style="margin-top: 32px;">
+                <div class="card" style="background: var(--bg-card);">
+                    <h3 class="form-section-title">Demo Controls</h3>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn btn-ghost btn-sm" onclick="showDemoState('pending')">Pending</button>
+                        <button class="btn btn-ghost btn-sm" onclick="showDemoState('waiting')">Waiting</button>
+                        <button class="btn btn-ghost btn-sm" onclick="showDemoState('flip')">Flip Animation</button>
+                        <button class="btn btn-ghost btn-sm" onclick="showDemoState('sponsor')">Result: Sponsor</button>
+                        <button class="btn btn-ghost btn-sm" onclick="showDemoState('sponsored')">Result: Sponsored</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/coin-toss.js"></script>
+    <script>
+        let coinToss = null;
+        const params = new URLSearchParams(window.location.search);
+        const challengeId = params.get('challenge');
+        const demoMode = params.get('demo') === 'true';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            // Show demo controls in demo mode or if no challenge ID
+            if (demoMode || !challengeId) {
+                document.getElementById('demo-controls').classList.remove('hidden');
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('coin-toss-display').classList.remove('hidden');
+                showDemoState('pending');
+                return;
+            }
+
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            // Initialize coin toss
+            coinToss = new CoinTossAnimation('coin-toss-display', {
+                onComplete: (result) => {
+                    console.log('Coin toss complete:', result);
+                }
+            });
+
+            // Determine if current user is creator (would come from challenge data)
+            coinToss.setIsCreator(true); // Default to creator view
+
+            try {
+                await coinToss.init(challengeId, user.id);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('coin-toss-display').classList.remove('hidden');
+            } catch (error) {
+                document.getElementById('loading-state').innerHTML = `
+                    <div class="card" style="text-align: center; padding: 64px;">
+                        <div class="error-icon">!</div>
+                        <h2 class="error-title">Error Loading Coin Toss</h2>
+                        <p class="error-message">${error.message}</p>
+                        <a href="dashboard.html" class="btn btn-primary">Back to Dashboard</a>
+                    </div>
+                `;
+            }
+        });
+
+        // Demo state functions
+        function showDemoState(state) {
+            const container = document.getElementById('coin-toss-display');
+
+            switch (state) {
+                case 'pending':
+                    container.innerHTML = `
+                        <div class="coin-toss-modal">
+                            <div class="coin-toss-content">
+                                <div class="coin-pending">
+                                    <div class="coin-icon-large">
+                                        <div class="coin heads">H</div>
+                                    </div>
+                                    <h2 class="coin-toss-title">Coin Toss Pending</h2>
+                                    <p class="coin-toss-subtitle">You called: <strong>HEADS</strong></p>
+                                    <p class="coin-toss-message">Waiting for counterparty to accept...</p>
+                                    <div class="coin-toss-info">
+                                        <p>When they accept, the coin will be flipped using blockchain randomness.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'waiting':
+                    container.innerHTML = `
+                        <div class="coin-toss-modal">
+                            <div class="coin-toss-content">
+                                <div class="coin-waiting">
+                                    <div class="coin-icon-large pulse">
+                                        <div class="coin heads">H</div>
+                                    </div>
+                                    <h2 class="coin-toss-title">Waiting for Counterparty</h2>
+                                    <p class="coin-toss-subtitle">You called: <strong>HEADS</strong></p>
+                                    <p class="coin-toss-message">Your counterparty gets: <strong>TAILS</strong></p>
+                                    <div class="coin-toss-info">
+                                        <p>The flip will happen when they accept the attestation.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'flip':
+                    container.innerHTML = `
+                        <div class="coin-toss-modal">
+                            <div class="coin-toss-content">
+                                <div class="coin-flip-container">
+                                    <div class="coin-flipping" id="demo-coin">
+                                        <div class="coin heads front">H</div>
+                                        <div class="coin tails back">T</div>
+                                    </div>
+                                    <p class="flip-status">Flipping...</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    // Trigger animation
+                    setTimeout(() => {
+                        document.getElementById('demo-coin').classList.add('animate');
+                    }, 100);
+                    // Show result after animation
+                    setTimeout(() => {
+                        showDemoState('sponsor');
+                    }, 3000);
+                    break;
+
+                case 'sponsor':
+                    container.innerHTML = `
+                        <div class="coin-toss-modal">
+                            <div class="coin-toss-content">
+                                <div class="coin-result sponsor">
+                                    <div class="result-coin">
+                                        <div class="coin tails large bounce">T</div>
+                                    </div>
+                                    <div class="result-badge">TAILS</div>
+                                    <h2 class="result-title">You're Sponsoring This Attestation</h2>
+                                    <p class="result-message">You called HEADS. The flip landed on TAILS.</p>
+                                    <p class="result-amount">Amount charged: $29.94</p>
+                                    <div class="result-verification">
+                                        <p class="verification-label">Provably Fair</p>
+                                        <p class="verification-hash">Block #52847392</p>
+                                        <button class="btn btn-ghost btn-sm">Verify Result</button>
+                                    </div>
+                                    <div class="share-buttons">
+                                        <p class="share-label">Share Result</p>
+                                        <div class="share-btn-group">
+                                            <button class="btn btn-ghost btn-sm share-btn">Share on X</button>
+                                            <button class="btn btn-ghost btn-sm share-btn" onclick="showToast('Link copied!', 'success')">Copy Link</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'sponsored':
+                    container.innerHTML = `
+                        <div class="coin-toss-modal">
+                            <div class="coin-toss-content">
+                                <div class="coin-result sponsored">
+                                    <div class="result-coin">
+                                        <div class="coin heads large bounce">H</div>
+                                    </div>
+                                    <div class="result-badge">HEADS</div>
+                                    <h2 class="result-title">Sponsored by Your Counterparty</h2>
+                                    <p class="result-message">You called HEADS. The flip landed on HEADS.</p>
+                                    <p class="result-amount">Your fee: $0.00</p>
+                                    <div class="result-verification">
+                                        <p class="verification-label">Provably Fair</p>
+                                        <p class="verification-hash">Block #52847392</p>
+                                        <button class="btn btn-ghost btn-sm">Verify Result</button>
+                                    </div>
+                                    <div class="share-buttons">
+                                        <p class="share-label">Share Result</p>
+                                        <div class="share-btn-group">
+                                            <button class="btn btn-ghost btn-sm share-btn">Share on X</button>
+                                            <button class="btn btn-ghost btn-sm share-btn" onclick="showToast('Link copied!', 'success')">Copy Link</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
