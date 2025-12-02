@@ -113,17 +113,15 @@ export function buildShareText(
     feeAmountCents: number,
     verificationUrl: string
 ): { text: string; hashtags: string[] } {
-    const feeFormatted = `$${(feeAmountCents / 100).toFixed(2)}`;
-
     if (isSponsor) {
         return {
-            text: `I'm sponsoring a ${feeFormatted} attestation on @TattleHash after a blockchain coin toss. Provably fair, on-chain verified. ${verificationUrl}`,
-            hashtags: ['TattleHash', 'BlockchainFair'],
+            text: `Flipped a coin on the blockchain—I'm sponsoring this one! 🪙 @TattleHash ${verificationUrl}`,
+            hashtags: [],
         };
     } else {
         return {
-            text: `My attestation was sponsored after a blockchain coin toss on @TattleHash! Provably fair randomness. ${verificationUrl}`,
-            hashtags: ['TattleHash', 'Sponsored'],
+            text: `Flipped a coin on the blockchain—my counterparty's treating! 🪙 @TattleHash ${verificationUrl}`,
+            hashtags: [],
         };
     }
 }
@@ -149,11 +147,11 @@ export function buildShareData(
 
     return {
         sponsor_share: {
-            text: `I'm sponsoring a ${feeFormatted} attestation on @TattleHash after a blockchain coin toss. Provably fair, on-chain verified. #TattleHash`,
+            text: `Flipped a coin on the blockchain—I'm sponsoring this one! 🪙 @TattleHash`,
             url: verificationUrl,
         },
         sponsored_share: {
-            text: `My attestation was sponsored after a blockchain coin toss on @TattleHash! Provably fair randomness. #TattleHash #Sponsored`,
+            text: `Flipped a coin on the blockchain—my counterparty's treating! 🪙 @TattleHash`,
             url: verificationUrl,
         },
     };

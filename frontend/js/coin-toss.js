@@ -253,19 +253,20 @@ class CoinTossAnimation {
         if (!this.state.share) return '';
 
         const shareData = isSponsor ? this.state.share.sponsor_share : this.state.share.sponsored_share;
-        const encodedText = encodeURIComponent(shareData.text);
-        const encodedUrl = encodeURIComponent(shareData.url);
+        const tweetText = encodeURIComponent(shareData.text);
+        const tweetUrl = encodeURIComponent(shareData.url);
+        const copyText = `${shareData.text} ${shareData.url}`.replace(/'/g, "\\'");
 
         return `
             <div class="share-buttons">
                 <p class="share-label">Share Result</p>
                 <div class="share-btn-group">
-                    <a href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}"
+                    <a href="https://twitter.com/intent/tweet?text=${tweetText}&url=${tweetUrl}"
                        target="_blank"
                        class="btn btn-ghost btn-sm share-btn">
                         Share on X
                     </a>
-                    <button onclick="navigator.clipboard.writeText('${shareData.text} ${shareData.url}')"
+                    <button onclick="navigator.clipboard.writeText('${copyText}').then(() => showToast('Link copied!', 'success'))"
                             class="btn btn-ghost btn-sm share-btn">
                         Copy Link
                     </button>
