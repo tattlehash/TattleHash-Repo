@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attestation Details - TattleHash</title>
+    <meta name="description" content="View attestation details and blockchain anchor status.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🛡️</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="create.html">New Attestation</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+
+            <div class="nav-toggle" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="detail-page">
+        <div class="container">
+            <!-- Header -->
+            <div class="detail-header animate-fade-in">
+                <a href="dashboard.html" class="btn btn-ghost btn-sm mb-lg">
+                    ← Back to Dashboard
+                </a>
+                <div class="flex-between" style="flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h1 class="dashboard-title">Attestation <span class="text-gradient" id="att-mode">--</span></h1>
+                        <p class="dashboard-subtitle" id="att-id" style="font-family: monospace; font-size: 0.875rem;">--</p>
+                    </div>
+                    <div id="att-status" class="detail-status pending">
+                        <span class="status-dot"></span>
+                        <span>Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="detail-grid animate-fade-in">
+                <!-- Main Details -->
+                <div>
+                    <!-- Attestation Details Card -->
+                    <div class="card detail-card mb-lg">
+                        <h3 class="card-title mb-lg">Attestation Details</h3>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Content Hash</span>
+                            <span class="detail-value mono" id="detail-hash">--</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Mode</span>
+                            <span class="detail-value" id="detail-mode">--</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Created</span>
+                            <span class="detail-value" id="detail-created">--</span>
+                        </div>
+
+                        <div class="detail-row" id="row-amount" style="display: none;">
+                            <span class="detail-label">Amount</span>
+                            <span class="detail-value" id="detail-amount">--</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Description</span>
+                            <span class="detail-value" id="detail-description" style="max-width: 300px;">--</span>
+                        </div>
+
+                        <div class="detail-row" id="row-counterparty" style="display: none;">
+                            <span class="detail-label">Counterparty</span>
+                            <span class="detail-value mono" id="detail-counterparty">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Blockchain Anchor Card -->
+                    <div class="card detail-card mb-lg">
+                        <h3 class="card-title mb-lg">Blockchain Anchor</h3>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Network</span>
+                            <span class="detail-value">Polygon Mainnet</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Status</span>
+                            <span class="detail-value" id="detail-anchor-status">--</span>
+                        </div>
+
+                        <div class="detail-row" id="row-tx-hash" style="display: none;">
+                            <span class="detail-label">Transaction</span>
+                            <a href="#" target="_blank" class="detail-value mono" id="detail-tx-hash" style="color: var(--accent-cyan);">--</a>
+                        </div>
+
+                        <div class="detail-row" id="row-block" style="display: none;">
+                            <span class="detail-label">Block</span>
+                            <span class="detail-value" id="detail-block">--</span>
+                        </div>
+
+                        <div class="detail-row" id="row-anchored-at" style="display: none;">
+                            <span class="detail-label">Anchored At</span>
+                            <span class="detail-value" id="detail-anchored-at">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Traffic Light (for Gatekeeper) -->
+                    <div class="card detail-card mb-lg hidden" id="traffic-light-card">
+                        <h3 class="card-title mb-lg">Gatekeeper Status</h3>
+                        <div class="traffic-light">
+                            <div class="traffic-light-item">
+                                <div class="traffic-light-indicator green" id="light-green"></div>
+                                <div class="traffic-light-label">Confirmed</div>
+                            </div>
+                            <div class="traffic-light-item">
+                                <div class="traffic-light-indicator yellow" id="light-yellow"></div>
+                                <div class="traffic-light-label">Pending</div>
+                            </div>
+                            <div class="traffic-light-item">
+                                <div class="traffic-light-indicator red" id="light-red"></div>
+                                <div class="traffic-light-label">Disputed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div>
+                    <!-- QR Code Card -->
+                    <div class="card detail-card mb-lg">
+                        <div class="qr-container">
+                            <h4 class="mb-md">Verification QR</h4>
+                            <div class="qr-code" id="qr-code">
+                                <span style="color: #666; font-size: 0.75rem;">Loading...</span>
+                            </div>
+                            <p class="text-muted" style="font-size: 0.8125rem;">
+                                Scan to verify this attestation
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Actions Card -->
+                    <div class="card detail-card">
+                        <h4 class="mb-lg">Actions</h4>
+
+                        <button class="btn btn-secondary btn-block mb-md" onclick="downloadPDF()">
+                            📄 Download PDF
+                        </button>
+
+                        <button class="btn btn-ghost btn-block mb-md" onclick="copyVerifyLink()">
+                            🔗 Copy Verify Link
+                        </button>
+
+                        <a href="#" target="_blank" id="polygonscan-link" class="btn btn-ghost btn-block" style="display: none;">
+                            🔷 View on Polygonscan
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        let attestation = null;
+
+        // Check authentication and load attestation
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+
+            if (!id) {
+                showToast('No attestation ID provided', 'error');
+                setTimeout(() => window.location.href = 'dashboard.html', 1500);
+                return;
+            }
+
+            await loadAttestation(id);
+        });
+
+        async function loadAttestation(id) {
+            try {
+                attestation = await fetchWithAuth(`/attestations/${id}`);
+                renderAttestation(attestation);
+            } catch (error) {
+                console.error('Failed to load attestation:', error);
+                showToast('Failed to load attestation', 'error');
+            }
+        }
+
+        function renderAttestation(att) {
+            // Header
+            document.getElementById('att-mode').textContent = att.mode || 'SOLO';
+            document.getElementById('att-id').textContent = att.id;
+
+            // Status badge
+            const statusEl = document.getElementById('att-status');
+            const status = att.anchor_status || 'PENDING';
+            statusEl.className = `detail-status ${status.toLowerCase()}`;
+            statusEl.innerHTML = `<span>${getStatusLabel(status)}</span>`;
+
+            // Details
+            document.getElementById('detail-hash').textContent = truncateHash(att.content_hash || att.id);
+            document.getElementById('detail-mode').textContent = att.mode || 'SOLO';
+            document.getElementById('detail-created').textContent = formatDate(att.created_at);
+            document.getElementById('detail-description').textContent = att.description || '--';
+
+            // Amount
+            if (att.amount) {
+                document.getElementById('row-amount').style.display = 'flex';
+                document.getElementById('detail-amount').textContent = `$${att.amount.toFixed(2)}`;
+            }
+
+            // Counterparty
+            if (att.counterparty_wallet) {
+                document.getElementById('row-counterparty').style.display = 'flex';
+                document.getElementById('detail-counterparty').textContent = truncateAddress(att.counterparty_wallet);
+            }
+
+            // Anchor details
+            document.getElementById('detail-anchor-status').textContent = getStatusLabel(status);
+
+            if (att.anchor_tx_hash) {
+                document.getElementById('row-tx-hash').style.display = 'flex';
+                const txLink = document.getElementById('detail-tx-hash');
+                txLink.textContent = truncateHash(att.anchor_tx_hash);
+                txLink.href = `https://polygonscan.com/tx/${att.anchor_tx_hash}`;
+
+                document.getElementById('polygonscan-link').style.display = 'block';
+                document.getElementById('polygonscan-link').href = `https://polygonscan.com/tx/${att.anchor_tx_hash}`;
+            }
+
+            if (att.anchor_block_number) {
+                document.getElementById('row-block').style.display = 'flex';
+                document.getElementById('detail-block').textContent = att.anchor_block_number.toLocaleString();
+            }
+
+            if (att.anchored_at) {
+                document.getElementById('row-anchored-at').style.display = 'flex';
+                document.getElementById('detail-anchored-at').textContent = formatDate(att.anchored_at);
+            }
+
+            // Traffic light for Gatekeeper
+            if (att.mode === 'GATEKEEPER' || att.mode === 'ENFORCED') {
+                document.getElementById('traffic-light-card').classList.remove('hidden');
+                updateTrafficLight(att.gatekeeper_status || 'PENDING');
+            }
+
+            // Generate QR code
+            generateQRCode(att.id);
+        }
+
+        function getStatusLabel(status) {
+            switch (status) {
+                case 'ANCHORED': return 'Anchored';
+                case 'PENDING': return 'Pending';
+                case 'FAILED': return 'Failed';
+                default: return status;
+            }
+        }
+
+        function updateTrafficLight(status) {
+            const lights = ['green', 'yellow', 'red'];
+            lights.forEach(light => {
+                document.getElementById(`light-${light}`).classList.remove('active');
+            });
+
+            switch (status) {
+                case 'CONFIRMED':
+                case 'ANCHORED':
+                    document.getElementById('light-green').classList.add('active');
+                    break;
+                case 'PENDING':
+                    document.getElementById('light-yellow').classList.add('active');
+                    break;
+                case 'DISPUTED':
+                case 'FAILED':
+                    document.getElementById('light-red').classList.add('active');
+                    break;
+            }
+        }
+
+        function generateQRCode(id) {
+            const verifyUrl = `https://tattlehash-worker.ashiscock.workers.dev/verify?id=${id}`;
+            const qrContainer = document.getElementById('qr-code');
+
+            if (typeof QRCode !== 'undefined') {
+                qrContainer.innerHTML = '';
+                QRCode.toCanvas(qrContainer, verifyUrl, {
+                    width: 140,
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff',
+                    }
+                }, (error) => {
+                    if (error) {
+                        qrContainer.innerHTML = '<span style="color: #666; font-size: 0.75rem;">QR Error</span>';
+                    }
+                });
+            }
+        }
+
+        function truncateHash(hash) {
+            if (!hash) return '--';
+            if (hash.length <= 20) return hash;
+            return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
+        }
+
+        async function downloadPDF() {
+            if (!attestation) return;
+
+            try {
+                showToast('Generating PDF...', 'success');
+                const response = await fetch(`${API_BASE}/attestations/${attestation.id}/pdf`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate PDF');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `attestation-${attestation.id.slice(0, 8)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+            } catch (error) {
+                showToast('Failed to download PDF', 'error');
+            }
+        }
+
+        function copyVerifyLink() {
+            if (!attestation) return;
+
+            const link = `https://tattlehash-worker.ashiscock.workers.dev/verify?id=${attestation.id}`;
+            navigator.clipboard.writeText(link).then(() => {
+                showToast('Verification link copied!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy link', 'error');
+            });
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        function toggleMobileNav() {
+            document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Attestation - TattleHash</title>
+    <meta name="description" content="Create a new blockchain-anchored attestation.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🛡️</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="create.html" class="active">New Attestation</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+
+            <div class="nav-toggle" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="create-page">
+        <div class="container">
+            <div class="dashboard-header animate-fade-in">
+                <h1 class="dashboard-title">Create <span class="text-gradient">Attestation</span></h1>
+                <p class="dashboard-subtitle">Select a mode and enter your transaction details</p>
+            </div>
+
+            <!-- Mode Selector -->
+            <div class="mode-selector animate-fade-in">
+                <div class="card mode-card card-glow" data-mode="SOLO" onclick="selectMode('SOLO')">
+                    <div class="mode-icon">📝</div>
+                    <div class="mode-name">Solo</div>
+                    <div class="mode-price">$0.99</div>
+                    <div class="mode-description">Single attestation with blockchain anchoring</div>
+                </div>
+
+                <div class="card mode-card card-glow" data-mode="FIRE" onclick="selectMode('FIRE')">
+                    <div class="mode-icon">🔥</div>
+                    <div class="mode-name">Fire</div>
+                    <div class="mode-price">$1.99</div>
+                    <div class="mode-description">Priority processing with fast-track anchoring</div>
+                </div>
+
+                <div class="card mode-card card-glow" data-mode="GATEKEEPER" onclick="selectMode('GATEKEEPER')">
+                    <div class="mode-icon">🚦</div>
+                    <div class="mode-name">Gatekeeper</div>
+                    <div class="mode-price">$1.99</div>
+                    <div class="mode-description">Two-party attestation with challenge support</div>
+                </div>
+
+                <div class="card mode-card card-glow" data-mode="ENFORCED" onclick="selectMode('ENFORCED')">
+                    <div class="mode-icon">⚖️</div>
+                    <div class="mode-name">Enforced</div>
+                    <div class="mode-price">$2.99</div>
+                    <div class="mode-description">Full enforcement with stake requirements</div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="create-form" class="create-form animate-fade-in" onsubmit="handleCreateAttestation(event)">
+                <!-- Counterparty Section (for Gatekeeper/Enforced) -->
+                <div id="counterparty-section" class="form-section hidden">
+                    <h3 class="form-section-title">Counterparty Details</h3>
+
+                    <div class="form-group">
+                        <label class="form-label" for="counterparty-wallet">Counterparty Wallet Address</label>
+                        <input
+                            type="text"
+                            id="counterparty-wallet"
+                            name="counterparty_wallet"
+                            class="form-input"
+                            placeholder="0x..."
+                        >
+                        <span class="form-hint">Ethereum/Polygon wallet address of the other party</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="counterparty-email">Counterparty Email (Optional)</label>
+                        <input
+                            type="email"
+                            id="counterparty-email"
+                            name="counterparty_email"
+                            class="form-input"
+                            placeholder="counterparty@example.com"
+                        >
+                        <span class="form-hint">We'll notify them about the attestation</span>
+                    </div>
+                </div>
+
+                <!-- Transaction Details -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Transaction Details</h3>
+
+                    <div class="form-group">
+                        <label class="form-label" for="amount">Amount (USD)</label>
+                        <input
+                            type="number"
+                            id="amount"
+                            name="amount"
+                            class="form-input"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            class="form-input"
+                            placeholder="Describe the transaction or agreement..."
+                            rows="4"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="metadata">Additional Metadata (Optional)</label>
+                        <textarea
+                            id="metadata"
+                            name="metadata"
+                            class="form-input"
+                            placeholder='{"invoice_id": "INV-001", "project": "Example"}'
+                            rows="3"
+                        ></textarea>
+                        <span class="form-hint">JSON format for custom data</span>
+                    </div>
+                </div>
+
+                <!-- Stake Section (for Enforced) -->
+                <div id="stake-section" class="form-section hidden">
+                    <h3 class="form-section-title">Stake Requirements</h3>
+
+                    <div class="form-group">
+                        <label class="form-label" for="stake-amount">Stake Amount (MATIC)</label>
+                        <input
+                            type="number"
+                            id="stake-amount"
+                            name="stake_amount"
+                            class="form-input"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                        >
+                        <span class="form-hint">Amount each party must stake as commitment</span>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="card" style="margin-top: 32px; background: var(--bg-primary);">
+                    <div class="flex-between mb-md">
+                        <span class="text-muted">Selected Mode</span>
+                        <span id="summary-mode" class="text-gradient" style="font-family: var(--font-heading);">--</span>
+                    </div>
+                    <div class="flex-between mb-lg">
+                        <span class="text-muted">Price</span>
+                        <span id="summary-price" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-cyan);">--</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn" disabled>
+                        Select a Mode to Continue
+                    </button>
+                </div>
+
+                <div id="create-error" class="form-hint form-error hidden mt-md"></div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let selectedMode = null;
+        const PRICES = {
+            SOLO: { price: '$0.99', cents: 99 },
+            FIRE: { price: '$1.99', cents: 199 },
+            GATEKEEPER: { price: '$1.99', cents: 199 },
+            ENFORCED: { price: '$2.99', cents: 299 },
+        };
+
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            // Check for mode in URL
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            if (mode && PRICES[mode]) {
+                selectMode(mode);
+            }
+        });
+
+        function selectMode(mode) {
+            selectedMode = mode;
+
+            // Update UI
+            document.querySelectorAll('.mode-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`.mode-card[data-mode="${mode}"]`).classList.add('selected');
+
+            // Update summary
+            document.getElementById('summary-mode').textContent = mode;
+            document.getElementById('summary-price').textContent = PRICES[mode].price;
+
+            // Show/hide sections based on mode
+            const counterpartySection = document.getElementById('counterparty-section');
+            const stakeSection = document.getElementById('stake-section');
+
+            if (mode === 'GATEKEEPER' || mode === 'ENFORCED') {
+                counterpartySection.classList.remove('hidden');
+            } else {
+                counterpartySection.classList.add('hidden');
+            }
+
+            if (mode === 'ENFORCED') {
+                stakeSection.classList.remove('hidden');
+            } else {
+                stakeSection.classList.add('hidden');
+            }
+
+            // Enable submit button
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.textContent = `Pay ${PRICES[mode].price} & Create`;
+        }
+
+        async function handleCreateAttestation(event) {
+            event.preventDefault();
+
+            if (!selectedMode) {
+                showToast('Please select a mode', 'error');
+                return;
+            }
+
+            const form = event.target;
+            const submitBtn = document.getElementById('submit-btn');
+            const errorDiv = document.getElementById('create-error');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            // Build attestation data
+            const data = {
+                mode: selectedMode,
+                description: form.description.value,
+            };
+
+            if (form.amount.value) {
+                data.amount = parseFloat(form.amount.value);
+            }
+
+            if (form.counterparty_wallet?.value) {
+                data.counterparty_wallet = form.counterparty_wallet.value;
+            }
+
+            if (form.counterparty_email?.value) {
+                data.counterparty_email = form.counterparty_email.value;
+            }
+
+            if (form.metadata?.value) {
+                try {
+                    data.metadata = JSON.parse(form.metadata.value);
+                } catch {
+                    errorDiv.textContent = 'Invalid JSON in metadata field';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+            }
+
+            if (form.stake_amount?.value) {
+                data.stake_amount = parseFloat(form.stake_amount.value);
+            }
+
+            // Reset error
+            errorDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating checkout...';
+
+            try {
+                // Create Stripe checkout session
+                const checkoutResponse = await fetch(`${API_BASE}/payments/create-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify({
+                        mode: selectedMode,
+                        user_id: user.id,
+                    }),
+                });
+
+                const checkoutData = await checkoutResponse.json();
+
+                if (!checkoutResponse.ok) {
+                    throw new Error(checkoutData.message || 'Failed to create checkout');
+                }
+
+                // Store attestation data for after payment
+                localStorage.setItem('pendingAttestation', JSON.stringify(data));
+
+                // Redirect to Stripe
+                showToast('Redirecting to payment...', 'success');
+                window.location.href = checkoutData.checkout_url;
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = `Pay ${PRICES[selectedMode].price} & Create`;
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        function toggleMobileNav() {
+            document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - TattleHash</title>
+    <meta name="description" content="Manage your attestations and view your TattleHash dashboard.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🛡️</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="create.html">New Attestation</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+
+            <div class="nav-toggle" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="dashboard">
+        <div class="container">
+            <!-- Header -->
+            <div class="dashboard-header animate-fade-in">
+                <h1 class="dashboard-title">Welcome back, <span id="user-name" class="text-gradient">User</span></h1>
+                <p class="dashboard-subtitle">Here's an overview of your attestations</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid animate-fade-in">
+                <div class="card stat-card card-glow">
+                    <div class="stat-label">Total Attestations</div>
+                    <div class="stat-value" id="stat-total">--</div>
+                </div>
+
+                <div class="card stat-card card-glow">
+                    <div class="stat-label">Credits Balance</div>
+                    <div class="stat-value" id="stat-credits">--</div>
+                </div>
+
+                <div class="card stat-card card-glow">
+                    <div class="stat-label">Anchored</div>
+                    <div class="stat-value" id="stat-anchored">--</div>
+                </div>
+
+                <div class="card stat-card card-glow">
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-value" id="stat-pending">--</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex-between mb-xl animate-fade-in">
+                <h2>Recent Attestations</h2>
+                <a href="create.html" class="btn btn-primary">
+                    <span>+</span> New Attestation
+                </a>
+            </div>
+
+            <!-- Attestation List -->
+            <div id="attestation-list" class="attestation-list animate-fade-in">
+                <!-- Loading state -->
+                <div class="attestation-item skeleton" style="height: 80px;"></div>
+                <div class="attestation-item skeleton" style="height: 80px;"></div>
+                <div class="attestation-item skeleton" style="height: 80px;"></div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="card text-center hidden" style="padding: 64px;">
+                <div style="font-size: 64px; margin-bottom: 16px;">📝</div>
+                <h3 class="mb-md">No attestations yet</h3>
+                <p class="text-muted mb-lg">Create your first attestation to get started</p>
+                <a href="create.html" class="btn btn-primary">Create Attestation</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Set user info
+            document.getElementById('user-name').textContent = user.email?.split('@')[0] || 'User';
+            document.getElementById('user-email').textContent = user.email || '';
+
+            // Load dashboard data
+            await loadDashboard();
+        });
+
+        async function loadDashboard() {
+            try {
+                // Load attestations
+                const attestations = await fetchWithAuth('/attestations');
+
+                // Update stats
+                const total = attestations.length;
+                const anchored = attestations.filter(a => a.anchor_status === 'ANCHORED').length;
+                const pending = attestations.filter(a => a.anchor_status === 'PENDING').length;
+
+                document.getElementById('stat-total').textContent = total;
+                document.getElementById('stat-anchored').textContent = anchored;
+                document.getElementById('stat-pending').textContent = pending;
+
+                // Try to load credits
+                try {
+                    const creditsData = await fetchWithAuth('/credits/balance');
+                    document.getElementById('stat-credits').textContent = creditsData.balance || 0;
+                } catch {
+                    document.getElementById('stat-credits').textContent = '0';
+                }
+
+                // Render attestation list
+                renderAttestations(attestations);
+
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                showToast('Failed to load dashboard data', 'error');
+            }
+        }
+
+        function renderAttestations(attestations) {
+            const container = document.getElementById('attestation-list');
+            const emptyState = document.getElementById('empty-state');
+
+            if (!attestations || attestations.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            // Sort by created_at descending
+            attestations.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Take first 10
+            const recent = attestations.slice(0, 10);
+
+            container.innerHTML = recent.map(att => `
+                <div class="attestation-item" onclick="viewAttestation('${att.id}')">
+                    <div class="attestation-status ${getStatusClass(att.anchor_status)}"></div>
+                    <div class="attestation-info">
+                        <div class="attestation-hash">${att.content_hash || att.id}</div>
+                        <div class="attestation-meta">
+                            <span>${formatDate(att.created_at)}</span>
+                            <span>${att.counterparty_wallet ? `→ ${truncateAddress(att.counterparty_wallet)}` : ''}</span>
+                        </div>
+                    </div>
+                    <span class="attestation-mode">${att.mode || 'SOLO'}</span>
+                </div>
+            `).join('');
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'ANCHORED': return 'anchored';
+                case 'PENDING': return 'pending';
+                case 'FAILED': return 'failed';
+                default: return 'pending';
+            }
+        }
+
+        function viewAttestation(id) {
+            window.location.href = `attestation.html?id=${id}`;
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        function toggleMobileNav() {
+            document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+    </script>
+</body>
+</html>
