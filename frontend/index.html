@@ -3,13 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TattleHash - Immutable Evidence for the Digital Age</title>
-    <meta name="description" content="Cryptographic proof for every transaction. Anchored on blockchain. Court-admissible evidence for the digital age.">
+    <title>TattleHash - Receipts That Can't Be Faked</title>
+    <meta name="description" content="Blockchain-anchored proof of your P2P transactions. Immutable. Instant. Designed to hold up in court.">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
 </head>
 <body>
-    <!-- Navigation - Minimal, transparent until scroll -->
+    <!-- Beta Banner -->
+    <div class="beta-banner">
+        <div class="container">
+            <span class="beta-banner-icon">🚀</span>
+            <span class="beta-banner-text"><strong>Beta Access:</strong> All Attestations Free</span>
+            <span class="beta-banner-cta">Your feedback shapes the product</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
     <nav class="navbar" id="navbar">
         <div class="container navbar-content">
             <a href="index.html" class="logo">
@@ -19,13 +28,13 @@
 
             <ul class="nav-links">
                 <li><a href="#features">How It Works</a></li>
-                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#pricing">Protection Tiers</a></li>
                 <li><a href="#trust">Trust</a></li>
             </ul>
 
             <div class="nav-actions">
                 <a href="login.html" class="btn btn-ghost">Sign In</a>
-                <a href="create.html" class="btn btn-primary">Create Attestation</a>
+                <a href="create.html" class="btn btn-primary">Create Proof</a>
             </div>
 
             <div class="nav-toggle" onclick="toggleMobileNav()">
@@ -41,12 +50,16 @@
         <div class="hero-content-wrapper">
             <!-- Top: Tagline in clear upper area -->
             <div class="hero-top">
-                <p class="hero-tagline animate-fade-in-up">
-                    Immutable Evidence for the Digital Age
-                </p>
+                <h1 class="hero-headline animate-fade-in-up">
+                    Receipts That Can't Be Faked
+                </h1>
                 <p class="hero-subtitle animate-fade-in-up animate-delay-1">
-                    Cryptographic proof for every transaction. Anchored on blockchain. Court-admissible.
+                    Blockchain-anchored proof of your P2P transactions.<br>
+                    Immutable. Instant. Designed to hold up in court.
                 </p>
+                <a href="create.html" class="btn btn-primary btn-lg animate-fade-in-up animate-delay-2">
+                    Create Your First Proof — Free
+                </a>
             </div>
 
             <!-- Middle: Keep clear for robot & logo -->
@@ -54,7 +67,7 @@
 
             <!-- Bottom: Scroll hint only -->
             <div class="hero-bottom">
-                <div class="hero-scroll-hint animate-fade-in-up animate-delay-2">
+                <div class="hero-scroll-hint animate-fade-in-up animate-delay-3">
                     Scroll to explore
                     <span>↓</span>
                 </div>
@@ -62,124 +75,308 @@
         </div>
     </section>
 
-    <!-- How It Works -->
+    <!-- Overview Section -->
     <section id="features" class="features section">
         <div class="container">
             <div class="section-header">
-                <h2>How It <span class="text-gradient">Works</span></h2>
-                <p>Three simple steps to immutable, verifiable proof</p>
+                <h2>Choose Your Level of <span class="text-gradient">Protection</span></h2>
+                <p class="section-intro">
+                    Every TattleHash attestation anchors your transaction to the blockchain—creating evidence that can't be altered, deleted, or disputed. Not by your counterparty. Not by us. Not by anyone.
+                </p>
             </div>
 
-            <div class="grid grid-3">
-                <div class="card feature-card card-glow">
-                    <div class="feature-icon">📝</div>
-                    <span class="feature-number">1</span>
-                    <h3 class="feature-title">Create</h3>
-                    <p class="feature-description">
-                        Enter transaction details, upload evidence, and cryptographically hash your attestation.
+            <!-- Tier Preview Cards -->
+            <div class="grid grid-4">
+                <div class="card tier-preview-card card-glow" onclick="scrollToTier('solo')">
+                    <h3 class="tier-preview-name">Solo</h3>
+                    <p class="tier-preview-tagline">Private proof. Just for you.</p>
+                    <p class="tier-preview-desc">
+                        You have the evidence. They don't know it exists. Perfect for quiet CYA when you're not ready to escalate.
                     </p>
+                    <span class="tier-preview-link">Learn more →</span>
                 </div>
 
-                <div class="card feature-card card-glow">
-                    <div class="feature-icon">⛓️</div>
-                    <span class="feature-number">2</span>
-                    <h3 class="feature-title">Anchor</h3>
-                    <p class="feature-description">
-                        Your attestation is anchored to the Polygon blockchain with an immutable timestamp.
+                <div class="card tier-preview-card card-glow" onclick="scrollToTier('fire')">
+                    <h3 class="tier-preview-name">Fire</h3>
+                    <p class="tier-preview-tagline">They know you're watching.</p>
+                    <p class="tier-preview-desc">
+                        Everything in Solo, plus your counterparty gets notified. Comes with a court-ready PDF dossier.
                     </p>
+                    <span class="tier-preview-link">Learn more →</span>
                 </div>
 
-                <div class="card feature-card card-glow">
-                    <div class="feature-icon">✅</div>
-                    <span class="feature-number">3</span>
-                    <h3 class="feature-title">Verify</h3>
-                    <p class="feature-description">
-                        Anyone can verify the authenticity and timestamp of your evidence via blockchain.
+                <div class="card tier-preview-card featured card-glow" onclick="scrollToTier('gatekeeper')">
+                    <span class="pricing-badge">Popular</span>
+                    <h3 class="tier-preview-name">Gatekeeper</h3>
+                    <p class="tier-preview-tagline">Mutual commitment. On the record.</p>
+                    <p class="tier-preview-desc">
+                        Both parties co-sign. Both get the evidence package. Flip a coin to decide who pays.
                     </p>
+                    <span class="tier-preview-link">Learn more →</span>
+                </div>
+
+                <div class="card tier-preview-card card-glow" onclick="scrollToTier('enforced')">
+                    <h3 class="tier-preview-name">Enforced</h3>
+                    <p class="tier-preview-tagline">Money locked until it's done.</p>
+                    <p class="tier-preview-desc">
+                        Everything in Gatekeeper, plus funds are held in escrow until terms are met.
+                    </p>
+                    <span class="tier-preview-link">Learn more →</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Pricing Section -->
-    <section id="pricing" class="pricing section">
+    <!-- Pricing Section with Tabs -->
+    <section id="pricing" class="pricing section section-dark">
         <div class="container">
             <div class="section-header">
-                <h2>Simple <span class="text-gradient">Pricing</span></h2>
-                <p>Pay per attestation. No subscriptions. No hidden fees.</p>
+                <h2>Pick the Protection That <span class="text-gradient">Fits</span></h2>
             </div>
 
-            <div class="grid grid-4">
-                <div class="card pricing-card card-glow">
-                    <h3 class="pricing-name">Solo</h3>
-                    <div class="pricing-price">$0.99</div>
-                    <p class="pricing-description">
-                        Single attestation with blockchain anchoring
-                    </p>
-                    <ul class="pricing-features">
-                        <li>SHA-256 Hash</li>
-                        <li>Polygon Anchoring</li>
-                        <li>PDF Certificate</li>
-                        <li>QR Verification</li>
-                    </ul>
-                    <a href="create.html?mode=SOLO" class="btn btn-secondary btn-block">Choose Solo</a>
+            <!-- Tab Navigation -->
+            <div class="tier-tabs">
+                <button class="tier-tab active" data-tier="solo" onclick="showTier('solo')">Solo</button>
+                <button class="tier-tab" data-tier="fire" onclick="showTier('fire')">Fire</button>
+                <button class="tier-tab" data-tier="gatekeeper" onclick="showTier('gatekeeper')">Gatekeeper</button>
+                <button class="tier-tab" data-tier="enforced" onclick="showTier('enforced')">Enforced</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tier-content-container">
+                <!-- Solo -->
+                <div class="tier-content active" id="tier-solo">
+                    <div class="tier-detail">
+                        <div class="tier-detail-header">
+                            <h3 class="tier-detail-name">Solo</h3>
+                            <div class="tier-detail-price">$4.99</div>
+                            <p class="tier-detail-credits">1 credit</p>
+                        </div>
+                        <p class="tier-detail-headline">Private Proof</p>
+                        <p class="tier-detail-tagline">"I have proof."</p>
+                        <ul class="tier-features">
+                            <li>Blockchain-anchored hash (Polygon)</li>
+                            <li>Immutable timestamp</li>
+                            <li>Basic receipt with transaction ID</li>
+                            <li>Evidence survives even if TattleHash shuts down</li>
+                            <li class="feature-optional">Optional: Add court-ready PDF (+$4.99)</li>
+                        </ul>
+                        <div class="tier-best-for">
+                            <p class="tier-best-for-label">Best for:</p>
+                            <ul>
+                                <li>Quiet CYA for verbal agreements</li>
+                                <li>"I sent the files" receipts</li>
+                                <li>OTC crypto confirmations</li>
+                                <li>Freelance delivery timestamps</li>
+                            </ul>
+                        </div>
+                        <a href="create.html?mode=SOLO" class="btn btn-primary btn-lg btn-block">Create Solo Attestation</a>
+                    </div>
                 </div>
 
-                <div class="card pricing-card card-glow">
-                    <h3 class="pricing-name">Fire</h3>
-                    <div class="pricing-price">$1.99</div>
-                    <p class="pricing-description">
-                        Priority processing with fast-track anchoring
-                    </p>
-                    <ul class="pricing-features">
-                        <li>Everything in Solo</li>
-                        <li>Priority Queue</li>
-                        <li>Faster Confirmation</li>
-                        <li>Premium Support</li>
-                    </ul>
-                    <a href="create.html?mode=FIRE" class="btn btn-secondary btn-block">Choose Fire</a>
+                <!-- Fire -->
+                <div class="tier-content" id="tier-fire">
+                    <div class="tier-detail">
+                        <div class="tier-detail-header">
+                            <h3 class="tier-detail-name">Fire</h3>
+                            <div class="tier-detail-price">$14.97</div>
+                            <p class="tier-detail-credits">3 credits</p>
+                        </div>
+                        <p class="tier-detail-headline">Post-Transaction Protection</p>
+                        <p class="tier-detail-tagline">"Already sent it? Protect yourself now."</p>
+                        <ul class="tier-features">
+                            <li>Everything in Solo</li>
+                            <li>Counterparty notification</li>
+                            <li>Court-ready PDF dossier included</li>
+                            <li>QR code verification</li>
+                            <li>IPFS-hosted document links</li>
+                            <li>Professional formatting for legal use</li>
+                        </ul>
+                        <div class="tier-best-for">
+                            <p class="tier-best-for-label">Best for:</p>
+                            <ul>
+                                <li>Already sent money, want leverage</li>
+                                <li>Delivered work, client going quiet</li>
+                                <li>Deals where you're getting nervous</li>
+                                <li>Evidence package ready for lawyer</li>
+                            </ul>
+                        </div>
+                        <a href="create.html?mode=FIRE" class="btn btn-primary btn-lg btn-block">Create Fire Attestation</a>
+                    </div>
                 </div>
 
-                <div class="card pricing-card featured card-glow">
-                    <span class="pricing-badge">Popular</span>
-                    <h3 class="pricing-name">Gatekeeper</h3>
-                    <div class="pricing-price">$1.99</div>
-                    <p class="pricing-description">
-                        Two-party attestation with challenge support
-                    </p>
-                    <ul class="pricing-features">
-                        <li>Everything in Fire</li>
-                        <li>Counterparty Signing</li>
-                        <li>Traffic Light Status</li>
-                        <li>Dispute Resolution</li>
-                    </ul>
-                    <a href="create.html?mode=GATEKEEPER" class="btn btn-primary btn-block">Choose Gatekeeper</a>
+                <!-- Gatekeeper -->
+                <div class="tier-content" id="tier-gatekeeper">
+                    <div class="tier-detail">
+                        <div class="tier-detail-header">
+                            <h3 class="tier-detail-name">Gatekeeper</h3>
+                            <div class="tier-detail-price">$29.94</div>
+                            <p class="tier-detail-credits">6 credits</p>
+                        </div>
+                        <p class="tier-detail-headline">Mutual Commitment</p>
+                        <p class="tier-detail-tagline">"Starting a deal? Lock them in first."</p>
+                        <ul class="tier-features">
+                            <li>Everything in Fire</li>
+                            <li>Both parties co-sign</li>
+                            <li>Both parties receive the PDF</li>
+                            <li>Coin Toss to split the fee (loser pays!)</li>
+                            <li>Proof that you BOTH agreed</li>
+                        </ul>
+                        <div class="tier-best-for">
+                            <p class="tier-best-for-label">Best for:</p>
+                            <ul>
+                                <li>P2P trades with strangers</li>
+                                <li>Freelance contracts before starting work</li>
+                                <li>Deposit agreements</li>
+                                <li>Any deal where mutual commitment matters</li>
+                            </ul>
+                        </div>
+                        <p class="tier-risk-free">
+                            <strong>Risk-Free:</strong> If they ghost, you get a refund down to Fire price. You still keep proof that you tried.
+                        </p>
+                        <a href="create.html?mode=GATEKEEPER" class="btn btn-primary btn-lg btn-block">Create Gatekeeper Attestation</a>
+                    </div>
                 </div>
 
-                <div class="card pricing-card card-glow">
-                    <h3 class="pricing-name">Enforced</h3>
-                    <div class="pricing-price">$2.99</div>
-                    <p class="pricing-description">
-                        Full enforcement with stake requirements
-                    </p>
-                    <ul class="pricing-features">
-                        <li>Everything in Gatekeeper</li>
-                        <li>Stake Escrow</li>
-                        <li>Auto-Enforcement</li>
-                        <li>Legal Templates</li>
-                    </ul>
-                    <a href="create.html?mode=ENFORCED" class="btn btn-secondary btn-block">Choose Enforced</a>
+                <!-- Enforced -->
+                <div class="tier-content" id="tier-enforced">
+                    <div class="tier-detail">
+                        <div class="tier-detail-header">
+                            <h3 class="tier-detail-name">Enforced</h3>
+                            <div class="tier-detail-price">$59.88</div>
+                            <p class="tier-detail-credits">12 credits</p>
+                        </div>
+                        <p class="tier-detail-headline">Escrow Protection</p>
+                        <p class="tier-detail-tagline">"Money locked until it's done."</p>
+                        <ul class="tier-features">
+                            <li>Everything in Gatekeeper</li>
+                            <li>Funds locked in escrow</li>
+                            <li>Release conditions defined upfront</li>
+                            <li>Money moves only when terms are met</li>
+                        </ul>
+                        <div class="tier-best-for">
+                            <p class="tier-best-for-label">Best for:</p>
+                            <ul>
+                                <li>High-value OTC trades ($2,500+)</li>
+                                <li>Contractor milestone payments</li>
+                                <li>Formal business agreements</li>
+                                <li>Deals where handshakes aren't enough</li>
+                            </ul>
+                        </div>
+                        <p class="tier-comparison">
+                            <strong>77% cheaper than Escrow.com</strong> on a $10k trade ($59.88 vs $260).
+                        </p>
+                        <p class="tier-risk-free">
+                            <strong>Risk-Free:</strong> If they ghost, you get a refund down to Fire price. Escrowed funds returned.
+                        </p>
+                        <a href="create.html?mode=ENFORCED" class="btn btn-primary btn-lg btn-block">Create Enforced Attestation</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="comparison-table-container">
+                <h3 class="comparison-title">Compare All Tiers</h3>
+                <div class="comparison-table-wrapper">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>Solo<br><span class="table-price">$4.99</span></th>
+                                <th>Fire<br><span class="table-price">$14.97</span></th>
+                                <th>Gatekeeper<br><span class="table-price">$29.94</span></th>
+                                <th>Enforced<br><span class="table-price">$59.88</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Blockchain proof</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Immutable timestamp</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Basic receipt</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Counterparty notified</td>
+                                <td class="dash">—</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Court-ready PDF</td>
+                                <td class="optional">+$4.99</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Mutual co-signing</td>
+                                <td class="dash">—</td>
+                                <td class="dash">—</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Coin Toss fee-split</td>
+                                <td class="dash">—</td>
+                                <td class="dash">—</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Escrow protection</td>
+                                <td class="dash">—</td>
+                                <td class="dash">—</td>
+                                <td class="dash">—</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr class="best-for-row">
+                                <td><strong>Best for</strong></td>
+                                <td>Quiet CYA</td>
+                                <td>Already sent it</td>
+                                <td>New deals</td>
+                                <td>High-value</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Trust Section -->
-    <section id="trust" class="trust section section-dark">
+    <section id="trust" class="trust section">
         <div class="container">
             <div class="section-header">
-                <h2>Built on <span class="text-gradient">Trust</span></h2>
-                <p>Enterprise-grade security you can verify</p>
+                <h2>Why <span class="text-gradient">TattleHash</span>?</h2>
+            </div>
+
+            <div class="trust-comparison">
+                <p class="trust-compare-item"><strong>DocuSign</strong> proves you clicked a button.</p>
+                <p class="trust-compare-item"><strong>Escrow.com</strong> holds money.</p>
+                <p class="trust-compare-item highlight"><strong>TattleHash</strong> creates immutable evidence of what was attested—evidence designed to be admissible and persuasive in any jurisdiction.</p>
+            </div>
+
+            <div class="trust-explainer">
+                <h3>What Makes It Immutable?</h3>
+                <p>
+                    Your attestation is hashed and anchored to the Polygon blockchain. That hash can't be altered without breaking verification—not by your counterparty, not by a hacker, not by us. The proof exists independently of TattleHash. Even if we disappear, your evidence remains.
+                </p>
             </div>
 
             <div class="trust-badges">
@@ -210,15 +407,52 @@
         </div>
     </section>
 
+    <!-- Volume Users Section -->
+    <section class="volume-section section section-dark">
+        <div class="container">
+            <div class="section-header">
+                <h2>Doing Multiple <span class="text-gradient">Deals</span>?</h2>
+                <p>Credit Packs save up to 10%</p>
+            </div>
+
+            <div class="credit-packs">
+                <div class="credit-pack">
+                    <span class="credit-pack-amount">10 credits</span>
+                    <span class="credit-pack-price">$47.40</span>
+                    <span class="credit-pack-savings">5% off</span>
+                </div>
+                <div class="credit-pack">
+                    <span class="credit-pack-amount">25 credits</span>
+                    <span class="credit-pack-price">$116.00</span>
+                    <span class="credit-pack-savings">7% off</span>
+                </div>
+                <div class="credit-pack">
+                    <span class="credit-pack-amount">50 credits</span>
+                    <span class="credit-pack-price">$224.50</span>
+                    <span class="credit-pack-savings">10% off</span>
+                </div>
+                <div class="credit-pack">
+                    <span class="credit-pack-amount">100+</span>
+                    <span class="credit-pack-price">Contact us</span>
+                    <span class="credit-pack-savings">Commercial rates</span>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="credits.html" class="btn btn-secondary">Buy Credits</a>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="cta-section section">
         <div class="container text-center">
             <h2 class="mb-lg">Ready to Create <span class="text-gradient">Immutable Proof</span>?</h2>
             <p class="text-muted mb-xl" style="max-width: 500px; margin-left: auto; margin-right: auto;">
-                Secure your digital transactions with blockchain-anchored evidence. No subscription required.
+                Secure your digital transactions with blockchain-anchored evidence. Start free during beta.
             </p>
             <a href="create.html" class="btn btn-primary btn-lg animate-pulse-glow">
-                Start Your First Attestation
+                Create Your First Proof — Free
             </a>
         </div>
     </section>
@@ -232,14 +466,14 @@
                         <div class="logo-icon">🛡️</div>
                         <span>TattleHash</span>
                     </a>
-                    <p>Immutable evidence for the digital age. Secure your transactions with blockchain-anchored proof.</p>
+                    <p>Receipts that can't be faked. Blockchain-anchored proof for P2P transactions.</p>
                 </div>
 
                 <div class="footer-links">
                     <h4>Product</h4>
                     <ul>
                         <li><a href="#features">How It Works</a></li>
-                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="#pricing">Protection Tiers</a></li>
                         <li><a href="create.html">Create Attestation</a></li>
                         <li><a href="dashboard.html">Dashboard</a></li>
                     </ul>
@@ -286,6 +520,29 @@
 
         function toggleMobileNav() {
             document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+
+        // Tier tab switching
+        function showTier(tierName) {
+            // Update tabs
+            document.querySelectorAll('.tier-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.tier === tierName) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // Update content
+            document.querySelectorAll('.tier-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('tier-' + tierName).classList.add('active');
+        }
+
+        // Scroll to tier from preview cards
+        function scrollToTier(tierName) {
+            showTier(tierName);
+            document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' });
         }
     </script>
 </body>
