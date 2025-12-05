@@ -22,6 +22,7 @@ import { makeReceipt } from "../models/receipt";
 import { enqueue } from "../jobs/queue";
 import { recKey } from "../lib/kv";
 import { Env } from "../types";
+import { checkUserRateLimit } from "../middleware/ratelimit";
 
 /**
  * POST /attest - Create an attestation receipt
@@ -39,6 +40,12 @@ export async function postAttest(req: Request, env: Env): Promise<Response> {
     // To require auth, uncomment:
     // const authResponse = await requireAuth(req, env);
     // if (authResponse) return authResponse;
+
+    // Beta limit: 10 attestations per day per user/IP
+    const dailyLimitResult = await checkUserRateLimit(req, env, 'attestation_daily');
+    if (!dailyLimitResult.ok) {
+        return dailyLimitResult.response;
+    }
 
     let body: Record<string, unknown> = {};
     try {

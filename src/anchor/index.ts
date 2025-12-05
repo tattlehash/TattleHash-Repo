@@ -20,6 +20,11 @@ export {
     getReceipt,
     putReceipt,
     makeReceipt,
+    // Hash-Chain Enhancement (Patent: TraceAI v3.1)
+    makeChainedReceipt,
+    getChainHead,
+    updateChainHead,
+    verifyHashChain,
 } from './storage';
 
 // Merkle tree

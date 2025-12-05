@@ -14,6 +14,8 @@ import {
     StripeEvent,
     STRIPE_PRODUCTS,
 } from '../payments';
+import { authenticateRequest } from '../middleware/auth';
+import { checkUserRateLimit } from '../middleware/ratelimit';
 
 // ============================================================================
 // POST /payments/create-checkout - Create Stripe Checkout Session
@@ -23,6 +25,20 @@ export async function postCreateCheckout(
     req: Request,
     env: Env
 ): Promise<Response> {
+    // Check per-user rate limit for payments (stricter limit)
+    const rateLimitResult = await checkUserRateLimit(req, env, 'auth_payment');
+    if (!rateLimitResult.ok) {
+        return rateLimitResult.response;
+    }
+
+    // Require authentication
+    const authResult = await authenticateRequest(req, env);
+    if (!authResult.ok) {
+        return err(authResult.error.status, authResult.error.code, {
+            message: authResult.error.message,
+        });
+    }
+
     const bodyResult = await parseBody(req);
     if (!bodyResult.ok) {
         return err(400, 'INVALID_JSON', { message: bodyResult.error });
@@ -35,6 +51,13 @@ export async function postCreateCheckout(
                 path: e.path.map(String).join('.'),
                 message: e.message,
             })),
+        });
+    }
+
+    // Verify user_id matches authenticated user
+    if (parseResult.data.user_id !== authResult.context.userId) {
+        return err(403, 'FORBIDDEN', {
+            message: 'Cannot create checkout session for a different user',
         });
     }
 

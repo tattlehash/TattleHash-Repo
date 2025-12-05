@@ -6,7 +6,7 @@
     <title>Create Attestation - TattleHash</title>
     <meta name="description" content="Create a new blockchain-anchored attestation.">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <link rel="icon" type="image/png" href="assets/tattlehash-head-1.png">
 </head>
 <body>
     <!-- Navigation -->
@@ -48,29 +48,37 @@
                 <div class="card mode-card card-glow" data-mode="SOLO" onclick="selectMode('SOLO')">
                     <div class="mode-icon">📝</div>
                     <div class="mode-name">Solo</div>
-                    <div class="mode-price">$0.99</div>
-                    <div class="mode-description">Single attestation with blockchain anchoring</div>
+                    <div class="mode-price">$4.99</div>
+                    <div class="mode-credits">1 credit</div>
+                    <div class="mode-tagline">"I have proof"</div>
+                    <div class="mode-description">Private blockchain-anchored proof</div>
                 </div>
 
                 <div class="card mode-card card-glow" data-mode="FIRE" onclick="selectMode('FIRE')">
                     <div class="mode-icon">🔥</div>
                     <div class="mode-name">Fire</div>
-                    <div class="mode-price">$1.99</div>
-                    <div class="mode-description">Priority processing with fast-track anchoring</div>
+                    <div class="mode-price">$14.97</div>
+                    <div class="mode-credits">3 credits</div>
+                    <div class="mode-tagline">"Already sent it? Protect yourself now"</div>
+                    <div class="mode-description">Counterparty notification + PDF dossier</div>
                 </div>
 
                 <div class="card mode-card card-glow" data-mode="GATEKEEPER" onclick="selectMode('GATEKEEPER')">
                     <div class="mode-icon">🚦</div>
                     <div class="mode-name">Gatekeeper</div>
-                    <div class="mode-price">$1.99</div>
-                    <div class="mode-description">Two-party attestation with challenge support</div>
+                    <div class="mode-price">$29.94</div>
+                    <div class="mode-credits">6 credits</div>
+                    <div class="mode-tagline">"Starting a deal? Lock them in first"</div>
+                    <div class="mode-description">Mutual co-signing + verification</div>
                 </div>
 
                 <div class="card mode-card card-glow" data-mode="ENFORCED" onclick="selectMode('ENFORCED')">
                     <div class="mode-icon">⚖️</div>
                     <div class="mode-name">Enforced</div>
-                    <div class="mode-price">$2.99</div>
-                    <div class="mode-description">Full enforcement with stake requirements</div>
+                    <div class="mode-price">$59.88</div>
+                    <div class="mode-credits">12 credits</div>
+                    <div class="mode-tagline">"Money locked until it's done"</div>
+                    <div class="mode-description">Co-signing + fund verification</div>
                 </div>
             </div>
 
@@ -253,6 +261,85 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Pre-Attestation Warning Modal -->
+    <div id="warning-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-header">
+                <span class="modal-icon" style="font-size: 32px;">&#9888;&#65039;</span>
+                <h2 id="modal-title" style="color: var(--text-primary); margin: 0;">PERMANENT RECORD</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+                    This attestation will be permanently anchored to the blockchain. Once confirmed:
+                </p>
+                <ul style="color: var(--text-secondary); line-height: 1.8; padding-left: 20px; margin-bottom: 24px;">
+                    <li>It <strong style="color: var(--text-primary);">CANNOT be edited</strong> - by you or anyone</li>
+                    <li>It <strong style="color: var(--text-primary);">CANNOT be deleted</strong> - by you, your counterparty, or us</li>
+                    <li>It <strong style="color: var(--text-primary);">WILL PERSIST forever</strong> - even if TattleHash shuts down</li>
+                </ul>
+                <p style="color: var(--text-secondary); margin-bottom: 24px;">
+                    Please review your attestation details carefully.
+                </p>
+                <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; padding: 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <input
+                        type="checkbox"
+                        id="permanent-acknowledge"
+                        style="margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0;"
+                    >
+                    <span style="color: var(--text-secondary); font-size: 14px; line-height: 1.5;">
+                        I understand this attestation is permanent and cannot be undone
+                    </span>
+                </label>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 16px; margin-top: 24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeWarningModal()" style="flex: 1;">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirm-create-btn" onclick="confirmCreate()" disabled style="flex: 1;">
+                    Create Attestation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-content {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        .modal-icon {
+            background: rgba(255, 193, 7, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+        }
+    </style>
+
     <script src="js/app.js"></script>
     <script>
         let selectedMode = null;
@@ -260,10 +347,10 @@
         let selectedCoinCall = null;
 
         const PRICES = {
-            SOLO: { price: '$0.99', cents: 99 },
-            FIRE: { price: '$1.99', cents: 199 },
-            GATEKEEPER: { price: '$1.99', cents: 199 },
-            ENFORCED: { price: '$2.99', cents: 299 },
+            SOLO: { price: '$4.99', credits: 1, cents: 499 },
+            FIRE: { price: '$14.97', credits: 3, cents: 1497 },
+            GATEKEEPER: { price: '$29.94', credits: 6, cents: 2994 },
+            ENFORCED: { price: '$59.88', credits: 12, cents: 5988 },
         };
 
         // Check authentication
@@ -383,6 +470,36 @@
             submitBtn.textContent = `Pay ${PRICES[selectedMode].price} & Create`;
         }
 
+        let pendingFormData = null;
+
+        // Modal control functions
+        function showWarningModal() {
+            document.getElementById('warning-modal').style.display = 'flex';
+            document.getElementById('permanent-acknowledge').checked = false;
+            document.getElementById('confirm-create-btn').disabled = true;
+        }
+
+        function closeWarningModal() {
+            document.getElementById('warning-modal').style.display = 'none';
+            pendingFormData = null;
+        }
+
+        // Enable/disable confirm button based on checkbox
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkbox = document.getElementById('permanent-acknowledge');
+            if (checkbox) {
+                checkbox.addEventListener('change', (e) => {
+                    document.getElementById('confirm-create-btn').disabled = !e.target.checked;
+                });
+            }
+        });
+
+        async function confirmCreate() {
+            if (!pendingFormData) return;
+            closeWarningModal();
+            await processAttestation(pendingFormData);
+        }
+
         async function handleCreateAttestation(event) {
             event.preventDefault();
 
@@ -397,7 +514,12 @@
                 return;
             }
 
-            const form = event.target;
+            // Store form data and show warning modal
+            pendingFormData = event.target;
+            showWarningModal();
+        }
+
+        async function processAttestation(form) {
             const submitBtn = document.getElementById('submit-btn');
             const errorDiv = document.getElementById('create-error');
             const user = JSON.parse(localStorage.getItem('user') || '{}');

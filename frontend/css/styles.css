@@ -1642,7 +1642,8 @@ textarea.form-input {
 }
 
 .coin.heads {
-    background: url('../assets/tattlehash-head-2.png') center center / cover;
+    background: url('../assets/tattlehash-head-2.png') center center / cover !important;
+    background-size: cover !important;
     border-color: var(--accent-cyan);
     box-shadow:
         0 4px 8px rgba(0, 0, 0, 0.4),
@@ -1650,7 +1651,8 @@ textarea.form-input {
 }
 
 .coin.tails {
-    background: url('../assets/tattlehash-head-1.png') center center / cover;
+    background: url('../assets/tattlehash-head-1.png') center center / cover !important;
+    background-size: cover !important;
     border-color: var(--chrome-mid);
     box-shadow:
         0 4px 8px rgba(0, 0, 0, 0.4),

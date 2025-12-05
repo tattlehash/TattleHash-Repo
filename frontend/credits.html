@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buy Credits - TattleHash</title>
+    <meta name="description" content="Purchase TattleHash credits for blockchain-anchored attestations.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/png" href="assets/tattlehash-head-1.png">
+    <style>
+        .credits-page {
+            padding: 120px 0 80px;
+            min-height: 100vh;
+        }
+        .credits-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .credits-header h1 {
+            margin-bottom: 8px;
+        }
+        .credits-header p {
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .balance-card {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-cyan) 100%);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 48px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .balance-label {
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .balance-amount {
+            font-size: 48px;
+            font-weight: 700;
+            color: white;
+            margin: 8px 0;
+        }
+        .balance-value {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+        .packs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        .pack-card {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .pack-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-4px);
+        }
+        .pack-card.selected {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+        .pack-card.contact-card {
+            cursor: default;
+            opacity: 0.8;
+        }
+        .pack-card.contact-card:hover {
+            transform: none;
+            border-color: var(--border-color);
+        }
+        .pack-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .pack-credits {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .pack-credits-label {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .pack-price {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 4px;
+        }
+        .pack-original {
+            color: var(--text-muted);
+            text-decoration: line-through;
+            font-size: 14px;
+        }
+        .pack-savings {
+            color: var(--accent-green);
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .checkout-section {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .warning-box h4 {
+            color: #ffc107;
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .warning-box ul {
+            color: var(--text-secondary);
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+        .beta-notice {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .beta-notice p {
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: 14px;
+        }
+        .beta-notice strong {
+            color: var(--accent-cyan);
+        }
+        .checkbox-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .summary-row .label {
+            color: var(--text-muted);
+        }
+        .summary-row .value {
+            color: var(--text-primary);
+        }
+        .summary-row .savings {
+            color: var(--accent-green);
+        }
+    </style>
+</head>
+<body>
+    <!-- Beta Banner -->
+    <div class="beta-banner">
+        <div class="container">
+            <span class="beta-banner-icon">&#128679;</span>
+            <span class="beta-banner-text"><strong>BETA</strong> - TattleHash is in public beta testing. Service is free during this period.</span>
+            <span class="beta-banner-cta">Report issues: ashiscock@gmail.com</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">&#128737;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="create.html">New Attestation</a></li>
+                <li><a href="credits.html" class="active">Credits</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="credits-page">
+        <div class="container">
+            <div class="credits-header animate-fade-in">
+                <h1>Buy <span class="text-gradient">Credits</span></h1>
+                <p>Credits are used for attestations. Buy in bulk and save up to 10%.</p>
+            </div>
+
+            <!-- Current Balance -->
+            <div class="balance-card animate-fade-in">
+                <div class="balance-label">Current Balance</div>
+                <div class="balance-amount" id="credit-balance">--</div>
+                <div class="balance-value">credits</div>
+            </div>
+
+            <!-- Credit Packs -->
+            <div class="packs-grid animate-fade-in">
+                <div class="pack-card" data-pack="10" onclick="selectPack(10)">
+                    <span class="pack-badge">5% OFF</span>
+                    <div class="pack-credits">10</div>
+                    <div class="pack-credits-label">credits</div>
+                    <div class="pack-price">$47.40</div>
+                    <div class="pack-original">$49.90</div>
+                    <div class="pack-savings">Save $2.50</div>
+                </div>
+
+                <div class="pack-card" data-pack="25" onclick="selectPack(25)">
+                    <span class="pack-badge">7% OFF</span>
+                    <div class="pack-credits">25</div>
+                    <div class="pack-credits-label">credits</div>
+                    <div class="pack-price">$116.00</div>
+                    <div class="pack-original">$124.75</div>
+                    <div class="pack-savings">Save $8.75</div>
+                </div>
+
+                <div class="pack-card" data-pack="50" onclick="selectPack(50)">
+                    <span class="pack-badge">10% OFF</span>
+                    <div class="pack-credits">50</div>
+                    <div class="pack-credits-label">credits</div>
+                    <div class="pack-price">$224.50</div>
+                    <div class="pack-original">$249.50</div>
+                    <div class="pack-savings">Save $25.00</div>
+                </div>
+
+                <div class="pack-card contact-card">
+                    <div class="pack-credits">100+</div>
+                    <div class="pack-credits-label">credits</div>
+                    <div class="pack-price" style="font-size: 20px;">Contact Us</div>
+                    <div class="pack-savings">Commercial rates available</div>
+                    <a href="mailto:ashiscock@gmail.com?subject=TattleHash Volume Pricing" class="btn btn-secondary btn-sm" style="margin-top: 16px;">
+                        Get Quote
+                    </a>
+                </div>
+            </div>
+
+            <!-- Checkout Section -->
+            <div class="checkout-section animate-fade-in" id="checkout-section" style="display: none;">
+                <!-- Beta Limit Notice -->
+                <div class="beta-notice">
+                    <p><strong>Beta Limit:</strong> Maximum 25 credits per transaction. Need more? <a href="mailto:ashiscock@gmail.com" style="color: var(--accent-cyan);">Contact us</a> for volume access.</p>
+                </div>
+
+                <!-- Non-Refundable Warning -->
+                <div class="warning-box">
+                    <h4>&#9432; CREDIT POLICY</h4>
+                    <ul>
+                        <li>Credits are <strong>NON-REFUNDABLE</strong> once purchased</li>
+                        <li>Credits are <strong>NON-TRANSFERABLE</strong> between accounts</li>
+                        <li>Credits do not expire under normal use</li>
+                    </ul>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="card" style="margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 16px; color: var(--text-primary);">Order Summary</h3>
+                    <div class="summary-row">
+                        <span class="label">Credits</span>
+                        <span class="value" id="summary-credits">--</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Regular Price</span>
+                        <span class="value" id="summary-regular">--</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Discount</span>
+                        <span class="savings" id="summary-discount">--</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Total</span>
+                        <span class="value" id="summary-total">--</span>
+                    </div>
+                </div>
+
+                <!-- Acknowledgment Checkbox -->
+                <div class="checkbox-container">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">
+                        <input
+                            type="checkbox"
+                            id="refund-acknowledge"
+                            style="margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0;"
+                        >
+                        <span style="color: var(--text-secondary); font-size: 14px; line-height: 1.5;">
+                            I understand credits are non-refundable and agree to the
+                            <a href="terms.html" target="_blank" style="color: var(--accent-cyan);">Terms of Service</a>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Purchase Button -->
+                <button type="button" class="btn btn-primary btn-block btn-lg" id="purchase-btn" disabled onclick="handlePurchase()">
+                    Select a Pack to Continue
+                </button>
+
+                <div id="purchase-error" class="form-hint form-error hidden" style="margin-top: 16px; text-align: center;"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <span>&copy; 2025 TattleHash. All rights reserved.</span>
+                <span><a href="terms.html">Terms</a> | <a href="privacy.html">Privacy</a></span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        let selectedPack = null;
+
+        const PACKS = {
+            10: { credits: 10, price: 47.40, regular: 49.90, discount: 2.50 },
+            25: { credits: 25, price: 116.00, regular: 124.75, discount: 8.75 },
+            50: { credits: 50, price: 224.50, regular: 249.50, discount: 25.00 },
+        };
+
+        // Check authentication on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            // Fetch current credit balance
+            await fetchCreditBalance();
+
+            // Setup checkbox listener
+            document.getElementById('refund-acknowledge').addEventListener('change', updatePurchaseButton);
+        });
+
+        async function fetchCreditBalance() {
+            try {
+                const response = await fetch(`${API_BASE}/credits`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('credit-balance').textContent = data.balance || 0;
+                } else {
+                    document.getElementById('credit-balance').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Failed to fetch balance:', error);
+                document.getElementById('credit-balance').textContent = '0';
+            }
+        }
+
+        function selectPack(packSize) {
+            // Beta limit check
+            if (packSize > 25) {
+                showToast('Beta limit: Maximum 25 credits per transaction', 'error');
+                return;
+            }
+
+            selectedPack = packSize;
+
+            // Update UI
+            document.querySelectorAll('.pack-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`.pack-card[data-pack="${packSize}"]`).classList.add('selected');
+
+            // Show checkout section
+            document.getElementById('checkout-section').style.display = 'block';
+
+            // Update summary
+            const pack = PACKS[packSize];
+            document.getElementById('summary-credits').textContent = `${pack.credits} credits`;
+            document.getElementById('summary-regular').textContent = `$${pack.regular.toFixed(2)}`;
+            document.getElementById('summary-discount').textContent = `-$${pack.discount.toFixed(2)}`;
+            document.getElementById('summary-total').textContent = `$${pack.price.toFixed(2)}`;
+
+            // Reset checkbox
+            document.getElementById('refund-acknowledge').checked = false;
+            updatePurchaseButton();
+
+            // Scroll to checkout
+            document.getElementById('checkout-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function updatePurchaseButton() {
+            const btn = document.getElementById('purchase-btn');
+            const checkbox = document.getElementById('refund-acknowledge');
+
+            if (!selectedPack) {
+                btn.disabled = true;
+                btn.textContent = 'Select a Pack to Continue';
+            } else if (!checkbox.checked) {
+                btn.disabled = true;
+                btn.textContent = 'Acknowledge Policy to Continue';
+            } else {
+                btn.disabled = false;
+                const pack = PACKS[selectedPack];
+                btn.textContent = `Pay $${pack.price.toFixed(2)}`;
+            }
+        }
+
+        async function handlePurchase() {
+            if (!selectedPack) {
+                showToast('Please select a credit pack', 'error');
+                return;
+            }
+
+            if (!document.getElementById('refund-acknowledge').checked) {
+                showToast('Please acknowledge the refund policy', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('purchase-btn');
+            const errorDiv = document.getElementById('purchase-error');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const pack = PACKS[selectedPack];
+
+            // Reset error
+            errorDiv.classList.add('hidden');
+            btn.disabled = true;
+            btn.textContent = 'Creating checkout...';
+
+            try {
+                // Create checkout session for credit pack
+                // Note: Backend would need to support credit pack purchases
+                // For now, we'll use SOLO mode with quantity
+                const response = await fetch(`${API_BASE}/payments/create-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    },
+                    body: JSON.stringify({
+                        mode: 'SOLO',
+                        user_id: user.id,
+                        quantity: selectedPack,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to create checkout');
+                }
+
+                // Redirect to Stripe
+                showToast('Redirecting to payment...', 'success');
+                window.location.href = data.checkout_url;
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = `Pay $${pack.price.toFixed(2)}`;
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

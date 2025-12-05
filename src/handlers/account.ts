@@ -21,6 +21,7 @@ import {
     getOrCreateUser,
 } from '../auth';
 import { authenticateRequest } from '../middleware/auth';
+import { checkLoginRateLimit } from '../middleware/ratelimit';
 import { getCreditSummary } from '../credits';
 import { z } from 'zod';
 
@@ -57,6 +58,11 @@ const ForgotPasswordSchema = z.object({
 const ResetPasswordSchema = z.object({
     token: z.string().length(64),
     new_password: z.string().min(8).max(128),
+});
+
+const VerifyLoginCodeSchema = z.object({
+    session_id: z.string().uuid(),
+    code: z.string().length(6).regex(/^\d{6}$/),
 });
 
 const UpdateProfileSchema = z.object({
@@ -210,8 +216,19 @@ export async function postRegister(req: Request, env: Env): Promise<Response> {
 }
 
 /**
+ * Generate a 6-digit verification code
+ */
+function generateVerificationCode(): string {
+    const buffer = new Uint32Array(1);
+    crypto.getRandomValues(buffer);
+    // Generate 6-digit code (100000-999999)
+    const code = (buffer[0] % 900000) + 100000;
+    return code.toString();
+}
+
+/**
  * POST /auth/login
- * Login with email/password
+ * Login with email/password - Step 1: Verify credentials and send code
  */
 export async function postLogin(req: Request, env: Env): Promise<Response> {
     const body = await req.json() as Record<string, unknown>;
@@ -223,6 +240,12 @@ export async function postLogin(req: Request, env: Env): Promise<Response> {
 
     const { email, password } = parsed.data;
     const normalizedEmail = email.toLowerCase();
+
+    // Check login rate limit (prevents brute force attacks)
+    const rateLimitResult = await checkLoginRateLimit(req, env, normalizedEmail);
+    if (!rateLimitResult.ok) {
+        return rateLimitResult.response;
+    }
 
     // Find user
     const user = await queryOne<UserRow & { password_hash: string }>(
@@ -251,21 +274,148 @@ export async function postLogin(req: Request, env: Env): Promise<Response> {
         });
     }
 
+    // Generate verification code and session
+    const sessionId = crypto.randomUUID();
+    const verificationCode = generateVerificationCode();
+    const now = Date.now();
+    const expiresAt = now + (10 * 60 * 1000); // 10 minutes
+
+    // Store pending login session in KV
+    const pendingSession = {
+        user_id: user.id,
+        email: user.email,
+        wallet_address: user.wallet_address,
+        code_hash: await hashToken(verificationCode),
+        expires_at: expiresAt,
+        attempts: 0,
+        created_at: now,
+    };
+
+    await env.GATE_KV.put(
+        `login_session:${sessionId}`,
+        JSON.stringify(pendingSession),
+        { expirationTtl: 600 } // 10 minutes
+    );
+
+    // Log verification code (in production, send via email)
+    console.log(JSON.stringify({
+        t: now,
+        at: 'login_verification_code_sent',
+        user_id: user.id,
+        email: normalizedEmail,
+        session_id: sessionId,
+        code: verificationCode, // In production: send via email, don't log
+        expires_at: new Date(expiresAt).toISOString(),
+    }));
+
+    // Return session ID for code verification
+    return ok({
+        status: 'verification_required',
+        session_id: sessionId,
+        message: 'A verification code has been sent to your email.',
+        expires_in: 600, // seconds
+        // Include code in response for development/testing
+        verification_code: env.NODE_ENV !== 'production' ? verificationCode : undefined,
+    });
+}
+
+/**
+ * POST /auth/verify-login-code
+ * Login Step 2: Verify the code and complete login
+ */
+export async function postVerifyLoginCode(req: Request, env: Env): Promise<Response> {
+    const body = await req.json() as Record<string, unknown>;
+    const parsed = VerifyLoginCodeSchema.safeParse(body);
+
+    if (!parsed.success) {
+        return err(400, 'VALIDATION_ERROR', { errors: parsed.error.flatten() });
+    }
+
+    const { session_id, code } = parsed.data;
+
+    // Get pending session from KV
+    const sessionData = await env.GATE_KV.get(`login_session:${session_id}`);
+    if (!sessionData) {
+        return err(401, 'SESSION_EXPIRED', {
+            message: 'Login session has expired. Please start over.',
+        });
+    }
+
+    const session = JSON.parse(sessionData) as {
+        user_id: string;
+        email: string;
+        wallet_address: string | null;
+        code_hash: string;
+        expires_at: number;
+        attempts: number;
+        created_at: number;
+    };
+
+    // Check expiration
+    if (Date.now() > session.expires_at) {
+        await env.GATE_KV.delete(`login_session:${session_id}`);
+        return err(401, 'SESSION_EXPIRED', {
+            message: 'Verification code has expired. Please start over.',
+        });
+    }
+
+    // Check attempt limit (max 3 attempts)
+    if (session.attempts >= 3) {
+        await env.GATE_KV.delete(`login_session:${session_id}`);
+        return err(401, 'TOO_MANY_ATTEMPTS', {
+            message: 'Too many invalid attempts. Please start over.',
+        });
+    }
+
+    // Verify code
+    const codeHash = await hashToken(code);
+    if (codeHash !== session.code_hash) {
+        // Increment attempt counter
+        session.attempts += 1;
+        await env.GATE_KV.put(
+            `login_session:${session_id}`,
+            JSON.stringify(session),
+            { expirationTtl: Math.ceil((session.expires_at - Date.now()) / 1000) }
+        );
+
+        return err(401, 'INVALID_CODE', {
+            message: 'Invalid verification code.',
+            attempts_remaining: 3 - session.attempts,
+        });
+    }
+
+    // Code verified! Delete the session
+    await env.GATE_KV.delete(`login_session:${session_id}`);
+
     // Update login stats
     const now = Date.now();
     await execute(
         env.TATTLEHASH_DB,
         'UPDATE users SET last_login_at = ?, login_count = login_count + 1 WHERE id = ?',
-        [now, user.id]
+        [now, session.user_id]
+    );
+
+    // Get full user data
+    const user = await queryOne<UserRow>(
+        env.TATTLEHASH_DB,
+        `SELECT id, email, username, display_name, wallet_address,
+                email_verified, auth_method, profile_image_url, preferences,
+                created_at, updated_at, last_login_at, login_count
+         FROM users WHERE id = ?`,
+        [session.user_id]
     );
 
     // Generate token
-    const token = await generateToken(env, user.id, user.wallet_address ?? `email:${user.email}`);
+    const token = await generateToken(
+        env,
+        session.user_id,
+        session.wallet_address ?? `email:${session.email}`
+    );
 
     return ok({
         token: token.token,
         expires_at: token.expires_at,
-        user: {
+        user: user ? {
             id: user.id,
             email: user.email,
             username: user.username,
@@ -273,7 +423,7 @@ export async function postLogin(req: Request, env: Env): Promise<Response> {
             wallet_address: user.wallet_address,
             auth_method: user.auth_method,
             email_verified: Boolean(user.email_verified),
-        },
+        } : null,
     });
 }
 
@@ -418,10 +568,24 @@ export async function postForgotPassword(req: Request, env: Env): Promise<Respon
         return ok({ message: 'If an account exists with this email, a reset link has been sent.' });
     }
 
+    // Check rate limit: max 3 reset requests per hour per email
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const recentRequests = await queryOne<{ count: number }>(
+        env.TATTLEHASH_DB,
+        `SELECT COUNT(*) as count FROM password_reset_tokens
+         WHERE user_id = ? AND created_at > ?`,
+        [user.id, oneHourAgo]
+    );
+
+    if (recentRequests && recentRequests.count >= 3) {
+        // Still return success message to prevent enumeration
+        return ok({ message: 'If an account exists with this email, a reset link has been sent.' });
+    }
+
     // Generate reset token
     const resetToken = generateSecureToken();
     const resetTokenHash = await hashToken(resetToken);
-    const expiresAt = Date.now() + (60 * 60 * 1000); // 1 hour
+    const expiresAt = Date.now() + (15 * 60 * 1000); // 15 minutes (security best practice)
     const now = Date.now();
 
     // Store reset token

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accept Invitation - TattleHash</title>
+    <meta name="description" content="Review and accept a TattleHash attestation invitation.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/png" href="assets/tattlehash-head-1.png">
+    <style>
+        .accept-page {
+            padding: 120px 0 80px;
+            min-height: 100vh;
+        }
+        .accept-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 40px;
+        }
+        .accept-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .accept-header h1 {
+            margin-bottom: 8px;
+        }
+        .accept-header .mode-badge {
+            display: inline-block;
+            background: var(--accent-purple);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .from-section {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .from-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .from-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .terms-section {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .terms-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+        .terms-field {
+            margin-bottom: 16px;
+        }
+        .terms-field:last-child {
+            margin-bottom: 0;
+        }
+        .terms-field .label {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .terms-field .value {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .terms-field .value.amount {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+        .fee-section {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .fee-section .fee-label {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .fee-section .fee-method {
+            color: var(--accent-cyan);
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .coin-icon {
+            font-size: 24px;
+        }
+        .enforced-notice {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .enforced-notice h4 {
+            color: #ffc107;
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .enforced-notice p {
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+        }
+        .action-buttons .btn {
+            flex: 1;
+        }
+        .expired-notice {
+            text-align: center;
+            padding: 40px;
+        }
+        .expired-notice .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        .expired-notice h2 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .expired-notice p {
+            color: var(--text-muted);
+        }
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+        .loading .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-content {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        .modal-icon {
+            background: rgba(255, 193, 7, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 32px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Beta Banner -->
+    <div class="beta-banner">
+        <div class="container">
+            <span class="beta-banner-icon">&#128679;</span>
+            <span class="beta-banner-text"><strong>BETA</strong> - TattleHash is in public beta testing. Service is free during this period.</span>
+            <span class="beta-banner-cta">Report issues: ashiscock@gmail.com</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">&#128737;</div>
+                <span>TattleHash</span>
+            </a>
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="auth-btn">Sign In</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="accept-page">
+        <div class="container">
+            <!-- Loading State -->
+            <div class="accept-card" id="loading-state">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="color: var(--text-muted);">Loading invitation...</p>
+                </div>
+            </div>
+
+            <!-- Error/Expired State -->
+            <div class="accept-card" id="error-state" style="display: none;">
+                <div class="expired-notice">
+                    <div class="icon">&#10060;</div>
+                    <h2 id="error-title">Invitation Not Found</h2>
+                    <p id="error-message">This invitation may have expired or been cancelled.</p>
+                    <a href="index.html" class="btn btn-primary" style="margin-top: 24px;">Go to Homepage</a>
+                </div>
+            </div>
+
+            <!-- Invitation Content -->
+            <div class="accept-card" id="invitation-content" style="display: none;">
+                <div class="accept-header">
+                    <span class="mode-badge" id="mode-badge">GATEKEEPER</span>
+                    <h1>You've Been Invited</h1>
+                    <p style="color: var(--text-muted);">Review the terms before co-signing</p>
+                </div>
+
+                <!-- From Section -->
+                <div class="from-section">
+                    <div class="from-label">Invitation From</div>
+                    <div class="from-value" id="initiator-email">--</div>
+                </div>
+
+                <!-- Terms Section -->
+                <div class="terms-section">
+                    <h3>Attestation Terms</h3>
+                    <div class="terms-field">
+                        <div class="label">Title</div>
+                        <div class="value" id="terms-title">--</div>
+                    </div>
+                    <div class="terms-field" id="amount-field">
+                        <div class="label">Amount</div>
+                        <div class="value amount" id="terms-amount">--</div>
+                    </div>
+                    <div class="terms-field">
+                        <div class="label">Description</div>
+                        <div class="value" id="terms-description">--</div>
+                    </div>
+                    <div class="terms-field" id="metadata-field" style="display: none;">
+                        <div class="label">Additional Details</div>
+                        <div class="value" id="terms-metadata">--</div>
+                    </div>
+                </div>
+
+                <!-- Fee Arrangement -->
+                <div class="fee-section" id="fee-section">
+                    <div class="fee-label">Fee Arrangement</div>
+                    <div class="fee-method" id="fee-method">
+                        <span class="coin-icon">&#129689;</span>
+                        Coin Toss - Flip for it!
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;" id="fee-detail">
+                        The coin will be flipped when you accept. Loser sponsors the attestation.
+                    </p>
+                </div>
+
+                <!-- Enforced Notice (shown for Enforced mode) -->
+                <div class="enforced-notice" id="enforced-notice" style="display: none;">
+                    <h4>&#9432; ABOUT ENFORCED ATTESTATIONS</h4>
+                    <p>
+                        TattleHash verifies fund availability but:<br>
+                        &bull; Does NOT hold funds in escrow<br>
+                        &bull; Does NOT transfer funds between parties<br>
+                        &bull; Does NOT guarantee future fund availability<br>
+                        &bull; Is NOT a substitute for legal or financial advice<br><br>
+                        This is an attestation service, not an escrow service.
+                    </p>
+                </div>
+
+                <!-- Expiry Notice -->
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <p style="color: var(--text-muted); font-size: 14px;">
+                        <span id="expiry-text">This invitation expires in <strong id="time-remaining">--</strong></span>
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-ghost" onclick="showDeclineModal()">
+                        Decline
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="showAcceptModal()">
+                        Review & Accept
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Accept Warning Modal -->
+    <div id="accept-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <span class="modal-icon">&#9888;&#65039;</span>
+                <h2 style="color: var(--text-primary); margin: 0;">READ CAREFULLY BEFORE CO-SIGNING</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+                    <strong id="modal-initiator">--</strong> has invited you to co-sign an attestation.
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px;">
+                    By co-signing, you confirm:
+                </p>
+                <ul style="color: var(--text-secondary); line-height: 1.8; padding-left: 20px; margin-bottom: 24px;">
+                    <li>You have reviewed the terms above</li>
+                    <li>You agree to be bound by this attestation</li>
+                    <li>This action is <strong style="color: var(--text-primary);">PERMANENT</strong> and cannot be undone</li>
+                </ul>
+                <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; padding: 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <input
+                        type="checkbox"
+                        id="accept-acknowledge"
+                        style="margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0;"
+                    >
+                    <span style="color: var(--text-secondary); font-size: 14px; line-height: 1.5;">
+                        I have read the terms and agree to co-sign this permanent attestation
+                    </span>
+                </label>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 16px; margin-top: 24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeAcceptModal()" style="flex: 1;">
+                    Go Back
+                </button>
+                <button type="button" class="btn btn-primary" id="confirm-accept-btn" onclick="confirmAccept()" disabled style="flex: 1;">
+                    Co-Sign
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decline Confirmation Modal -->
+    <div id="decline-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" role="dialog" aria-modal="true">
+            <div class="modal-header" style="border-bottom-color: rgba(239, 83, 80, 0.3);">
+                <span class="modal-icon" style="background: rgba(239, 83, 80, 0.1);">&#10067;</span>
+                <h2 style="color: var(--text-primary); margin: 0;">Decline Invitation?</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    Are you sure you want to decline this invitation?
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-top: 16px;">
+                    The initiator will be notified. This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 16px; margin-top: 24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeDeclineModal()" style="flex: 1;">
+                    Go Back
+                </button>
+                <button type="button" class="btn" onclick="confirmDecline()" style="flex: 1; background: #ef5350; color: white;">
+                    Decline Invitation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <span>&copy; 2025 TattleHash. All rights reserved.</span>
+                <span><a href="terms.html">Terms</a> | <a href="privacy.html">Privacy</a></span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        let challengeData = null;
+        let challengeId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is logged in
+            const token = localStorage.getItem('token');
+            if (token) {
+                document.getElementById('auth-btn').textContent = 'Dashboard';
+                document.getElementById('auth-btn').href = 'dashboard.html';
+            }
+
+            // Get challenge ID from URL
+            const params = new URLSearchParams(window.location.search);
+            challengeId = params.get('id') || params.get('challenge');
+
+            if (!challengeId) {
+                showError('Invalid Link', 'No invitation ID provided in the URL.');
+                return;
+            }
+
+            await loadChallenge();
+
+            // Setup checkbox listener for accept modal
+            document.getElementById('accept-acknowledge').addEventListener('change', (e) => {
+                document.getElementById('confirm-accept-btn').disabled = !e.target.checked;
+            });
+        });
+
+        async function loadChallenge() {
+            try {
+                const response = await fetch(`${API_BASE}/challenges/${challengeId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        showError('Invitation Not Found', 'This invitation may have been cancelled or does not exist.');
+                    } else {
+                        showError('Error Loading Invitation', data.message || 'Unable to load invitation details.');
+                    }
+                    return;
+                }
+
+                challengeData = data;
+                displayChallenge(data);
+
+            } catch (error) {
+                console.error('Failed to load challenge:', error);
+                showError('Connection Error', 'Unable to connect to TattleHash. Please try again.');
+            }
+        }
+
+        function displayChallenge(data) {
+            // Hide loading, show content
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('invitation-content').style.display = 'block';
+
+            // Check if expired or already completed
+            if (data.status !== 'PENDING' && data.status !== 'SENT') {
+                if (data.status === 'ACCEPTED' || data.status === 'COMPLETED') {
+                    showError('Already Accepted', 'This invitation has already been accepted.');
+                } else if (data.status === 'EXPIRED') {
+                    showError('Invitation Expired', 'This invitation has expired and is no longer valid.');
+                } else if (data.status === 'DECLINED') {
+                    showError('Invitation Declined', 'This invitation was previously declined.');
+                } else {
+                    showError('Invitation Unavailable', `This invitation is no longer available (status: ${data.status}).`);
+                }
+                return;
+            }
+
+            // Set mode badge
+            const modeBadge = document.getElementById('mode-badge');
+            modeBadge.textContent = data.mode || 'GATEKEEPER';
+            if (data.mode === 'ENFORCED') {
+                modeBadge.style.background = 'var(--accent-cyan)';
+                document.getElementById('enforced-notice').style.display = 'block';
+            }
+
+            // Set initiator
+            document.getElementById('initiator-email').textContent = data.creator_email || data.creator_wallet || 'Unknown';
+            document.getElementById('modal-initiator').textContent = data.creator_email || data.creator_wallet || 'The initiator';
+
+            // Set terms
+            document.getElementById('terms-title').textContent = data.title || 'Untitled Attestation';
+            document.getElementById('terms-description').textContent = data.description || 'No description provided.';
+
+            // Set amount if present
+            if (data.amount || data.amount_usd) {
+                document.getElementById('terms-amount').textContent = `$${(data.amount || data.amount_usd).toLocaleString()}`;
+            } else {
+                document.getElementById('amount-field').style.display = 'none';
+            }
+
+            // Set metadata if present
+            if (data.metadata && Object.keys(data.metadata).length > 0) {
+                document.getElementById('metadata-field').style.display = 'block';
+                document.getElementById('terms-metadata').textContent = JSON.stringify(data.metadata, null, 2);
+            }
+
+            // Set fee arrangement
+            const feeSection = document.getElementById('fee-section');
+            const feeMethod = document.getElementById('fee-method');
+            const feeDetail = document.getElementById('fee-detail');
+
+            if (data.fee_arrangement === 'coin_toss') {
+                feeMethod.innerHTML = '<span class="coin-icon">&#129689;</span> Coin Toss - Flip for it!';
+                feeDetail.textContent = `They called ${data.coin_toss_call || 'heads'}. The coin flips when you accept.`;
+            } else if (data.fee_arrangement === 'creator_pays') {
+                feeMethod.innerHTML = '&#128176; Initiator Pays';
+                feeDetail.textContent = 'The initiator is covering the full fee.';
+            } else if (data.fee_arrangement === 'counterparty_pays') {
+                feeMethod.innerHTML = '&#128176; You Pay';
+                feeDetail.textContent = 'You will pay the attestation fee upon acceptance.';
+            } else if (data.fee_arrangement === 'split') {
+                feeMethod.innerHTML = '&#9878; Split 50/50';
+                feeDetail.textContent = 'The fee will be split equally between both parties.';
+            } else {
+                feeSection.style.display = 'none';
+            }
+
+            // Set expiry time
+            if (data.expires_at) {
+                const expiresAt = new Date(data.expires_at);
+                const now = new Date();
+                const diffMs = expiresAt - now;
+
+                if (diffMs > 0) {
+                    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                    if (hours > 24) {
+                        document.getElementById('time-remaining').textContent = `${Math.floor(hours / 24)} days`;
+                    } else if (hours > 0) {
+                        document.getElementById('time-remaining').textContent = `${hours}h ${minutes}m`;
+                    } else {
+                        document.getElementById('time-remaining').textContent = `${minutes} minutes`;
+                    }
+                } else {
+                    showError('Invitation Expired', 'This invitation has expired.');
+                }
+            } else {
+                document.getElementById('expiry-text').textContent = 'Respond within 72 hours to avoid automatic downgrade.';
+            }
+        }
+
+        function showError(title, message) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('invitation-content').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+            document.getElementById('error-title').textContent = title;
+            document.getElementById('error-message').textContent = message;
+        }
+
+        // Modal controls
+        function showAcceptModal() {
+            document.getElementById('accept-modal').style.display = 'flex';
+            document.getElementById('accept-acknowledge').checked = false;
+            document.getElementById('confirm-accept-btn').disabled = true;
+        }
+
+        function closeAcceptModal() {
+            document.getElementById('accept-modal').style.display = 'none';
+        }
+
+        function showDeclineModal() {
+            document.getElementById('decline-modal').style.display = 'flex';
+        }
+
+        function closeDeclineModal() {
+            document.getElementById('decline-modal').style.display = 'none';
+        }
+
+        async function confirmAccept() {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                // Save return URL and redirect to login
+                localStorage.setItem('returnUrl', window.location.href);
+                showToast('Please sign in to accept this invitation', 'info');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+                return;
+            }
+
+            closeAcceptModal();
+
+            const btn = document.querySelector('.action-buttons .btn-primary');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            try {
+                const response = await fetch(`${API_BASE}/challenges/${challengeId}/accept`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to accept invitation');
+                }
+
+                showToast('Invitation accepted! Redirecting...', 'success');
+
+                // Check for coin toss result
+                if (data.coin_toss_result) {
+                    // Redirect to coin toss result page
+                    setTimeout(() => {
+                        window.location.href = `coin-toss.html?challenge=${challengeId}`;
+                    }, 1500);
+                } else {
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                }
+
+            } catch (error) {
+                showToast(error.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Review & Accept';
+            }
+        }
+
+        async function confirmDecline() {
+            const token = localStorage.getItem('token');
+
+            closeDeclineModal();
+
+            const btn = document.querySelector('.action-buttons .btn-ghost');
+            btn.disabled = true;
+            btn.textContent = 'Declining...';
+
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`${API_BASE}/challenges/${challengeId}/decline`, {
+                    method: 'POST',
+                    headers,
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to decline invitation');
+                }
+
+                showToast('Invitation declined', 'success');
+
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+
+            } catch (error) {
+                showToast(error.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Decline';
+            }
+        }
+    </script>
+</body>
+</html>

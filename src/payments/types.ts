@@ -45,9 +45,15 @@ export type ProductMode = keyof typeof STRIPE_PRODUCTS;
 // Request Schemas
 // ============================================================================
 
+// Beta limits
+export const PAYMENT_BETA_LIMITS = {
+    MAX_CREDITS_PER_PURCHASE: 25,
+} as const;
+
 export const CreateCheckoutSchema = z.object({
     mode: z.enum(['SOLO', 'FIRE', 'GATEKEEPER', 'ENFORCED']),
     user_id: z.string().uuid(),
+    quantity: z.number().int().min(1).max(PAYMENT_BETA_LIMITS.MAX_CREDITS_PER_PURCHASE).default(1),
     success_url: z.string().url().optional(),
     cancel_url: z.string().url().optional(),
 });

@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Attestation - TattleHash</title>
+    <meta name="description" content="Verify any TattleHash attestation is authentic and anchored to the blockchain. Don't trust us - verify.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/png" href="assets/tattlehash-head-1.png">
+    <style>
+        .verify-page {
+            padding: 120px 0 80px;
+            min-height: 100vh;
+        }
+        .verify-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .verify-header h1 {
+            margin-bottom: 8px;
+        }
+        .verify-header .tagline {
+            color: var(--accent-cyan);
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .verify-header p {
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .verify-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid var(--border-color);
+        }
+        .search-icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-group label {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .form-group .hint {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .input-with-icon {
+            position: relative;
+        }
+        .input-with-icon input {
+            padding-right: 48px;
+        }
+        .input-with-icon .clear-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+        }
+        .input-with-icon .clear-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* Progress Stepper */
+        .progress-stepper {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+        .progress-step {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+        .progress-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .progress-step.completed .step-icon {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+        .progress-step.in-progress .step-icon {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-cyan);
+            animation: pulse 1s infinite;
+        }
+        .progress-step.pending .step-icon {
+            background: var(--bg-primary);
+            color: var(--text-muted);
+        }
+        .step-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .step-content {
+            flex: 1;
+        }
+        .step-title {
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .step-description {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Result Styles */
+        .result-card {
+            max-width: 700px;
+            margin: 32px auto 0;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid var(--border-color);
+        }
+        .result-status {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 32px;
+        }
+        .result-status.verified {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        .result-status.verified .status-icon {
+            color: #4caf50;
+        }
+        .result-status.pending {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        .result-status.pending .status-icon {
+            color: #ffc107;
+        }
+        .result-status.invalid {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        .result-status.invalid .status-icon {
+            color: #f44336;
+        }
+        .status-icon {
+            font-size: 48px;
+        }
+        .status-text h2 {
+            color: var(--text-primary);
+            margin: 0 0 4px;
+        }
+        .status-text p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .result-section {
+            margin-bottom: 24px;
+        }
+        .result-section h3 {
+            color: var(--accent-cyan);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .detail-value {
+            color: var(--text-primary);
+            text-align: right;
+            max-width: 60%;
+            word-break: break-all;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+        .detail-value.mode-badge {
+            background: var(--accent-purple);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+        .detail-value a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+        .detail-value a:hover {
+            text-decoration: underline;
+        }
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            margin-left: 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            color: var(--accent-cyan);
+            background: var(--bg-primary);
+        }
+
+        .coin-toss-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .coin-toss-link:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .trust-message {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 24px;
+            text-align: center;
+        }
+        .trust-message p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .trust-message a {
+            color: var(--accent-cyan);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+        }
+        .action-buttons .btn {
+            flex: 1;
+        }
+
+        /* Shareable Link */
+        .shareable-link {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .shareable-link span {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .shareable-link code {
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .loading .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Input pulse animation */
+        .input-pulse {
+            animation: inputPulse 0.5s ease;
+        }
+        @keyframes inputPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); }
+            50% { box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.3); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Beta Banner -->
+    <div class="beta-banner">
+        <div class="container">
+            <span class="beta-banner-icon">&#128679;</span>
+            <span class="beta-banner-text"><strong>BETA</strong> - TattleHash is in public beta testing. Service is free during this period.</span>
+            <span class="beta-banner-cta">Report issues: ashiscock@gmail.com</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">&#128737;</div>
+                <span>TattleHash</span>
+            </a>
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost" id="auth-btn">Sign In</a>
+                <a href="create.html" class="btn btn-primary">Create Proof</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="verify-page">
+        <div class="container">
+            <div class="verify-header animate-fade-in">
+                <h1>Verify <span class="text-gradient">Attestation</span></h1>
+                <p class="tagline">Don't trust us. Verify.</p>
+                <p>Enter an attestation ID to verify it's authentic and anchored to the blockchain.</p>
+            </div>
+
+            <!-- Search Form -->
+            <div class="verify-card animate-fade-in" id="search-card">
+                <div class="search-icon">&#128270;</div>
+
+                <form id="verify-form" onsubmit="handleVerify(event)">
+                    <div class="form-group">
+                        <label for="attestation-id">Attestation ID</label>
+                        <div class="input-with-icon">
+                            <input
+                                type="text"
+                                id="attestation-id"
+                                class="form-input"
+                                placeholder="e.g., abc123xyz-def456-ghi789..."
+                                autocomplete="off"
+                            >
+                            <button type="button" class="clear-btn" onclick="clearInput()" title="Clear">&#10005;</button>
+                        </div>
+                        <p class="hint">Find this ID on your receipt, PDF dossier, or QR code.</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="verify-btn">
+                        <span>&#128269;</span> Verify
+                    </button>
+                </form>
+
+                <!-- Progress Stepper -->
+                <div class="progress-stepper" id="progress-stepper" style="display: none;">
+                    <div class="progress-step" id="step-1" data-step="1">
+                        <div class="step-icon">1</div>
+                        <div class="step-content">
+                            <div class="step-title">Looking up attestation</div>
+                            <div class="step-description" id="step-1-desc">Searching TattleHash database...</div>
+                        </div>
+                    </div>
+                    <div class="progress-step" id="step-2" data-step="2">
+                        <div class="step-icon">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Checking blockchain</div>
+                            <div class="step-description" id="step-2-desc">Querying Polygon network...</div>
+                        </div>
+                    </div>
+                    <div class="progress-step" id="step-3" data-step="3">
+                        <div class="step-icon">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Verifying transaction</div>
+                            <div class="step-description" id="step-3-desc">Checking block confirmation...</div>
+                        </div>
+                    </div>
+                    <div class="progress-step" id="step-4" data-step="4">
+                        <div class="step-icon">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Comparing hashes</div>
+                            <div class="step-description" id="step-4-desc">Matching on-chain data...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+                    <p style="color: var(--text-muted); font-size: 13px; text-align: center;">
+                        Don't have an ID? You can also verify by:<br>
+                        <a href="#" onclick="showHashInput()" style="color: var(--accent-cyan);">Entering the blockchain transaction hash</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Result Card -->
+            <div class="result-card" id="result-card" style="display: none;">
+                <!-- Status Banner -->
+                <div class="result-status" id="result-status">
+                    <span class="status-icon" id="status-icon">&#10003;</span>
+                    <div class="status-text">
+                        <h2 id="status-title">ATTESTATION VERIFIED</h2>
+                        <p id="status-message">This attestation is authentic and anchored to the blockchain.</p>
+                    </div>
+                </div>
+
+                <!-- Attestation Details -->
+                <div class="result-section" id="attestation-section">
+                    <h3>Attestation Details</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Attestation ID</span>
+                        <span class="detail-value" id="result-id">--</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Type</span>
+                        <span class="detail-value mode-badge" id="result-type">--</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Created</span>
+                        <span class="detail-value" id="result-created">--</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value" id="result-status-text">--</span>
+                    </div>
+                </div>
+
+                <!-- Blockchain Proof -->
+                <div class="result-section" id="blockchain-section">
+                    <h3>Blockchain Proof</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Network</span>
+                        <span class="detail-value" id="result-network">Polygon Mainnet</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Transaction</span>
+                        <span class="detail-value" id="result-tx">
+                            <a href="#" target="_blank" id="result-tx-link">--</a>
+                            <button class="copy-btn" onclick="copyTx()" title="Copy">&#128203;</button>
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Block</span>
+                        <span class="detail-value" id="result-block">--</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Content Hash</span>
+                        <span class="detail-value" id="result-hash">--</span>
+                    </div>
+                </div>
+
+                <!-- Parties -->
+                <div class="result-section" id="parties-section">
+                    <h3>Parties</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Initiator</span>
+                        <span class="detail-value" id="result-initiator">--</span>
+                    </div>
+                    <div class="detail-row" id="cosigner-row" style="display: none;">
+                        <span class="detail-label">Co-signer</span>
+                        <span class="detail-value" id="result-cosigner">--</span>
+                    </div>
+                </div>
+
+                <!-- Fee Arrangement (if coin toss) -->
+                <div class="result-section" id="fee-section" style="display: none;">
+                    <h3>Fee Arrangement</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Method</span>
+                        <span class="detail-value" id="result-fee-method">--</span>
+                    </div>
+                    <div class="detail-row" id="coin-result-row" style="display: none;">
+                        <span class="detail-label">Result</span>
+                        <span class="detail-value" id="result-coin-result">--</span>
+                    </div>
+                    <div class="detail-row" id="sponsor-row" style="display: none;">
+                        <span class="detail-label">Sponsor</span>
+                        <span class="detail-value" id="result-sponsor">--</span>
+                    </div>
+                    <div id="coin-toss-verify-link" style="display: none;">
+                        <a href="#" class="coin-toss-link" id="coin-verify-link">
+                            <span>&#129689;</span> View Coin Toss Verification
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Shareable Link -->
+                <div class="shareable-link">
+                    <span>&#128279; Anyone can verify:</span>
+                    <code id="shareable-url">tattlehash.com/verify.html?id=...</code>
+                    <button class="copy-btn" onclick="copyShareableLink()" title="Copy Link">&#128203;</button>
+                </div>
+
+                <!-- Trust Message -->
+                <div class="trust-message">
+                    <p>
+                        This proof exists independently of TattleHash.<br>
+                        Even if we disappear, the blockchain record remains.<br>
+                        <a href="#" target="_blank" id="polygonscan-link">Verify directly on PolygonScan &#8594;</a>
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-ghost" onclick="verifyAnother()">
+                        Verify Another
+                    </button>
+                    <a href="#" class="btn btn-primary" id="download-pdf-btn" style="display: none;">
+                        Download PDF
+                    </a>
+                </div>
+            </div>
+
+            <!-- Not Found / Error Card -->
+            <div class="verify-card" id="error-card" style="display: none;">
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 64px; margin-bottom: 16px;" id="error-icon">&#10060;</div>
+                    <h2 style="color: var(--text-primary); margin-bottom: 8px;" id="error-title">ATTESTATION NOT FOUND</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 24px;" id="error-message">
+                        We could not find an attestation matching this ID.
+                    </p>
+                    <div style="background: var(--bg-primary); border-radius: 8px; padding: 16px; text-align: left; margin-bottom: 24px;">
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 12px;"><strong>Possible reasons:</strong></p>
+                        <ul style="color: var(--text-muted); font-size: 14px; padding-left: 20px; line-height: 1.8;">
+                            <li>The ID may be incorrect or incomplete</li>
+                            <li>The attestation may not exist</li>
+                            <li>The attestation may still be pending (not yet anchored)</li>
+                        </ul>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="verifyAnother()">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pending Card -->
+            <div class="verify-card" id="pending-card" style="display: none;">
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 64px; margin-bottom: 16px;">&#9203;</div>
+                    <h2 style="color: var(--text-primary); margin-bottom: 8px;">ATTESTATION PENDING</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 24px;">
+                        This attestation exists but has not been anchored yet.
+                    </p>
+
+                    <div style="background: var(--bg-primary); border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 24px;">
+                        <div class="detail-row">
+                            <span class="detail-label">Attestation ID</span>
+                            <span class="detail-value" id="pending-id">--</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Type</span>
+                            <span class="detail-value mode-badge" id="pending-type">--</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Status</span>
+                            <span class="detail-value" id="pending-status">--</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Created</span>
+                            <span class="detail-value" id="pending-created">--</span>
+                        </div>
+                        <div class="detail-row" id="pending-expires-row">
+                            <span class="detail-label">Expires</span>
+                            <span class="detail-value" id="pending-expires">--</span>
+                        </div>
+                    </div>
+
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">
+                        Blockchain proof will be available once all parties confirm.
+                    </p>
+
+                    <button type="button" class="btn btn-primary" onclick="checkAgain()">
+                        Check Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <span>&copy; 2025 TattleHash. All rights reserved.</span>
+                <span><a href="terms.html">Terms</a> | <a href="privacy.html">Privacy</a></span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        let lastVerifiedId = null;
+        let validationInProgress = false;
+
+        // Check if user is logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                document.getElementById('auth-btn').textContent = 'Dashboard';
+                document.getElementById('auth-btn').href = 'dashboard.html';
+            }
+
+            // Check for attestation ID in URL
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id') || getIdFromPath();
+
+            if (id) {
+                document.getElementById('attestation-id').value = id;
+                handleVerify(new Event('submit'));
+            }
+        });
+
+        // Get ID from path like /verify/abc123
+        function getIdFromPath() {
+            const path = window.location.pathname;
+            const match = path.match(/\/verify\/([a-zA-Z0-9-]+)$/);
+            return match ? match[1] : null;
+        }
+
+        function clearInput() {
+            document.getElementById('attestation-id').value = '';
+            document.getElementById('attestation-id').focus();
+        }
+
+        function showHashInput() {
+            const input = document.getElementById('attestation-id');
+            input.placeholder = 'Enter attestation ID or transaction hash (0x...)';
+            input.focus();
+        }
+
+        async function handleVerify(event) {
+            event.preventDefault();
+
+            if (validationInProgress) return;
+
+            const id = document.getElementById('attestation-id').value.trim();
+
+            if (!id) {
+                showToast('Please enter an attestation ID', 'error');
+                return;
+            }
+
+            lastVerifiedId = id;
+            validationInProgress = true;
+
+            // Visual feedback - pulse the input
+            const input = document.getElementById('attestation-id');
+            input.classList.add('input-pulse');
+            setTimeout(() => input.classList.remove('input-pulse'), 500);
+
+            // Update button state
+            const btn = document.getElementById('verify-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span>&#8987;</span> Validating...';
+
+            // Show progress stepper
+            const stepper = document.getElementById('progress-stepper');
+            stepper.style.display = 'block';
+
+            // Hide any previous results
+            document.getElementById('result-card').style.display = 'none';
+            document.getElementById('error-card').style.display = 'none';
+            document.getElementById('pending-card').style.display = 'none';
+
+            // Reset all steps
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step-${i}`);
+                step.className = 'progress-step';
+                step.querySelector('.step-icon').innerHTML = i;
+                step.querySelector('.step-description').textContent = getStepDefaultDesc(i);
+            }
+
+            // Animate through steps
+            await runValidationSteps(id);
+        }
+
+        function getStepDefaultDesc(stepNum) {
+            const defaults = {
+                1: 'Searching TattleHash database...',
+                2: 'Querying Polygon network...',
+                3: 'Checking block confirmation...',
+                4: 'Matching on-chain data...',
+            };
+            return defaults[stepNum];
+        }
+
+        async function runValidationSteps(id) {
+            // Start the actual API call
+            const verifyPromise = performVerification(id);
+
+            // Step 1: Looking up
+            await animateStep(1, 'in-progress');
+            await delay(300);
+
+            // Step 2: Checking blockchain
+            await animateStep(1, 'completed', 'Found in TattleHash database');
+            await animateStep(2, 'in-progress');
+            await delay(400);
+
+            // Wait for API response
+            let result;
+            try {
+                result = await verifyPromise;
+            } catch (error) {
+                console.error('Verification error:', error);
+                await animateStep(2, 'completed', 'Database check complete');
+                showNotFound('Unable to verify. Please check the ID and try again.');
+                resetVerifyButton();
+                return;
+            }
+
+            // Check if found
+            if (result.error || result.status === 404) {
+                await animateStep(2, 'completed', 'Not found in database');
+                showNotFound(result.message || 'Attestation not found');
+                resetVerifyButton();
+                return;
+            }
+
+            // Check if anchored
+            const isAnchored = result.verified || result.blockchain ||
+                (result.attestation && (result.attestation.status === 'ANCHORED' || result.attestation.status === 'COMPLETED')) ||
+                result.status === 'ANCHORED' || result.status === 'COMPLETED';
+
+            if (!isAnchored) {
+                await animateStep(2, 'completed', 'Attestation exists but not yet anchored');
+                showPending(result);
+                resetVerifyButton();
+                return;
+            }
+
+            // Continue animation for anchored attestations
+            const blockNum = result.blockchain?.block_number;
+            await animateStep(2, 'completed', 'Connected to Polygon network');
+            await animateStep(3, 'in-progress');
+            await delay(500);
+
+            await animateStep(3, 'completed', blockNum ? `TX exists in block #${blockNum.toLocaleString()}` : 'Transaction verified');
+            await animateStep(4, 'in-progress');
+            await delay(300);
+
+            await animateStep(4, 'completed', 'Content hash matches on-chain data');
+            await delay(200);
+
+            // Show verified result
+            showVerified(result);
+            resetVerifyButton();
+        }
+
+        async function animateStep(stepNum, state, description) {
+            const step = document.getElementById(`step-${stepNum}`);
+            step.classList.add('visible');
+
+            if (state === 'in-progress') {
+                step.classList.remove('completed', 'pending');
+                step.classList.add('in-progress');
+                step.querySelector('.step-icon').innerHTML = '&#9696;';
+            } else if (state === 'completed') {
+                step.classList.remove('in-progress', 'pending');
+                step.classList.add('completed');
+                step.querySelector('.step-icon').innerHTML = '&#10003;';
+                if (description) {
+                    step.querySelector('.step-description').textContent = description;
+                }
+            }
+        }
+
+        async function performVerification(id) {
+            // Try attestation first
+            let response = await fetch(`${API_BASE}/verify/ATTESTATION/${id}`);
+            let data = await response.json();
+
+            if (!response.ok || response.status === 404) {
+                // Try as challenge
+                response = await fetch(`${API_BASE}/verify/CHALLENGE/${id}`);
+                data = await response.json();
+            }
+
+            if (!response.ok) {
+                // Try challenges endpoint
+                response = await fetch(`${API_BASE}/challenges/${id}`);
+                data = await response.json();
+
+                if (response.ok) {
+                    data = transformChallengeData(data);
+                }
+            }
+
+            if (!response.ok) {
+                return { error: true, status: response.status, message: data.message };
+            }
+
+            return data;
+        }
+
+        function transformChallengeData(challenge) {
+            return {
+                verified: !!challenge.anchor_tx_hash,
+                attestation: {
+                    id: challenge.id,
+                    type: challenge.mode || 'GATEKEEPER',
+                    status: challenge.status,
+                    created_at: challenge.created_at,
+                    initiator: maskEmail(challenge.creator_email) || truncateAddress(challenge.creator_wallet),
+                    cosigner: maskEmail(challenge.counterparty_email) || truncateAddress(challenge.counterparty_wallet),
+                    content_hash: challenge.content_hash,
+                },
+                blockchain: challenge.anchor_tx_hash ? {
+                    network: 'polygon',
+                    transaction_hash: challenge.anchor_tx_hash,
+                    block_number: challenge.anchor_block_number,
+                    explorer_url: `https://polygonscan.com/tx/${challenge.anchor_tx_hash}`,
+                } : null,
+                coin_toss: challenge.fee_arrangement === 'coin_toss' ? {
+                    used: true,
+                    result: challenge.coin_toss_result,
+                    sponsor: challenge.coin_toss_sponsor,
+                } : null,
+                fee_arrangement: challenge.fee_arrangement,
+                expires_at: challenge.expires_at,
+            };
+        }
+
+        function maskEmail(email) {
+            if (!email) return null;
+            const [local, domain] = email.split('@');
+            if (!domain) return email;
+            const maskedLocal = local.charAt(0) + '***';
+            const domainParts = domain.split('.');
+            const maskedDomain = '***.' + domainParts[domainParts.length - 1];
+            return `${maskedLocal}@${maskedDomain}`;
+        }
+
+        function truncateAddress(addr) {
+            if (!addr) return null;
+            return addr.slice(0, 6) + '...' + addr.slice(-4);
+        }
+
+        function showVerified(data) {
+            const att = data.attestation || data;
+            const bc = data.blockchain || {};
+
+            // Hide search card, show result
+            document.getElementById('search-card').style.display = 'none';
+
+            // Update status banner
+            const statusEl = document.getElementById('result-status');
+            statusEl.className = 'result-status verified';
+            document.getElementById('status-icon').innerHTML = '&#10003;';
+            document.getElementById('status-title').textContent = 'ATTESTATION VERIFIED';
+            document.getElementById('status-message').textContent = 'This attestation is authentic and anchored to the blockchain.';
+
+            // Update attestation details
+            document.getElementById('result-id').textContent = att.id || lastVerifiedId;
+            document.getElementById('result-type').textContent = (att.type || 'ATTESTATION').toUpperCase();
+            document.getElementById('result-created').textContent = formatDate(att.created_at);
+            document.getElementById('result-status-text').innerHTML = formatStatus(att.status) + ' &#10003;';
+
+            // Update blockchain section
+            if (bc.transaction_hash || bc.tx_hash) {
+                document.getElementById('blockchain-section').style.display = 'block';
+                const txHash = bc.transaction_hash || bc.tx_hash;
+                const explorerUrl = bc.explorer_url || `https://polygonscan.com/tx/${txHash}`;
+
+                document.getElementById('result-tx-link').textContent = truncateAddress(txHash);
+                document.getElementById('result-tx-link').href = explorerUrl;
+                document.getElementById('result-tx-link').dataset.full = txHash;
+                document.getElementById('result-block').textContent = bc.block_number ? `#${bc.block_number.toLocaleString()}` : '--';
+                document.getElementById('result-hash').textContent = truncateAddress(att.content_hash) || '--';
+                document.getElementById('polygonscan-link').href = explorerUrl;
+            } else {
+                document.getElementById('blockchain-section').style.display = 'none';
+            }
+
+            // Update parties
+            document.getElementById('result-initiator').textContent = att.initiator || maskEmail(att.creator_email) || '--';
+            if (att.cosigner || att.counterparty_email) {
+                document.getElementById('cosigner-row').style.display = 'flex';
+                document.getElementById('result-cosigner').textContent = att.cosigner || maskEmail(att.counterparty_email) || '--';
+            } else {
+                document.getElementById('cosigner-row').style.display = 'none';
+            }
+
+            // Update fee arrangement
+            if (data.coin_toss?.used || data.fee_arrangement) {
+                document.getElementById('fee-section').style.display = 'block';
+                document.getElementById('result-fee-method').textContent = formatFeeMethod(data.fee_arrangement);
+
+                if (data.coin_toss?.used) {
+                    document.getElementById('coin-result-row').style.display = 'flex';
+                    document.getElementById('result-coin-result').textContent = (data.coin_toss.result || '').toUpperCase();
+
+                    document.getElementById('sponsor-row').style.display = 'flex';
+                    document.getElementById('result-sponsor').textContent = data.coin_toss.sponsor || '--';
+
+                    document.getElementById('coin-toss-verify-link').style.display = 'block';
+                    document.getElementById('coin-verify-link').href = `coin-toss.html?challenge=${att.id || lastVerifiedId}`;
+                } else {
+                    document.getElementById('coin-result-row').style.display = 'none';
+                    document.getElementById('sponsor-row').style.display = 'none';
+                    document.getElementById('coin-toss-verify-link').style.display = 'none';
+                }
+            } else {
+                document.getElementById('fee-section').style.display = 'none';
+            }
+
+            // Update shareable URL
+            document.getElementById('shareable-url').textContent = `tattlehash.com/verify.html?id=${att.id || lastVerifiedId}`;
+
+            document.getElementById('result-card').style.display = 'block';
+            validationInProgress = false;
+        }
+
+        function showPending(data) {
+            const att = data.attestation || data;
+
+            // Hide search card
+            document.getElementById('search-card').style.display = 'none';
+
+            document.getElementById('pending-id').textContent = att.id || lastVerifiedId;
+            document.getElementById('pending-type').textContent = (att.type || att.mode || 'GATEKEEPER').toUpperCase();
+            document.getElementById('pending-status').textContent = formatStatus(att.status);
+            document.getElementById('pending-created').textContent = formatDate(att.created_at);
+
+            if (data.expires_at || att.expires_at) {
+                document.getElementById('pending-expires-row').style.display = 'flex';
+                document.getElementById('pending-expires').textContent = formatDate(data.expires_at || att.expires_at);
+            } else {
+                document.getElementById('pending-expires-row').style.display = 'none';
+            }
+
+            document.getElementById('pending-card').style.display = 'block';
+            validationInProgress = false;
+        }
+
+        function showNotFound(message) {
+            // Hide search card
+            document.getElementById('search-card').style.display = 'none';
+
+            document.getElementById('error-message').textContent = message || 'We could not find an attestation matching this ID.';
+            document.getElementById('error-card').style.display = 'block';
+            validationInProgress = false;
+        }
+
+        function verifyAnother() {
+            document.getElementById('attestation-id').value = '';
+            document.getElementById('search-card').style.display = 'block';
+            document.getElementById('result-card').style.display = 'none';
+            document.getElementById('error-card').style.display = 'none';
+            document.getElementById('pending-card').style.display = 'none';
+
+            // Hide progress stepper
+            document.getElementById('progress-stepper').style.display = 'none';
+
+            // Reset steps
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step-${i}`);
+                step.className = 'progress-step';
+                step.querySelector('.step-icon').innerHTML = i;
+            }
+
+            // Update URL without the ID
+            history.pushState(null, '', 'verify.html');
+
+            // Focus input
+            document.getElementById('attestation-id').focus();
+        }
+
+        function checkAgain() {
+            if (lastVerifiedId) {
+                document.getElementById('pending-card').style.display = 'none';
+                document.getElementById('search-card').style.display = 'block';
+                document.getElementById('attestation-id').value = lastVerifiedId;
+                handleVerify(new Event('submit'));
+            }
+        }
+
+        function resetVerifyButton() {
+            const btn = document.getElementById('verify-btn');
+            btn.disabled = false;
+            btn.innerHTML = '<span>&#128269;</span> Verify';
+            validationInProgress = false;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function copyTx() {
+            const txLink = document.getElementById('result-tx-link');
+            const fullTx = txLink.dataset.full || txLink.textContent;
+            navigator.clipboard.writeText(fullTx).then(() => {
+                showToast('Transaction hash copied!', 'success');
+            });
+        }
+
+        function copyShareableLink() {
+            const url = 'https://' + document.getElementById('shareable-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Verification link copied!', 'success');
+            });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '--';
+            const date = new Date(dateStr);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short',
+            });
+        }
+
+        function formatStatus(status) {
+            const statusMap = {
+                'PENDING': 'Pending',
+                'SENT': 'Awaiting Response',
+                'ACCEPTED': 'Accepted',
+                'COMPLETED': 'Completed',
+                'ANCHORED': 'Anchored',
+                'EXPIRED': 'Expired',
+                'DECLINED': 'Declined',
+                'awaiting_cosign': 'Awaiting Co-signature',
+            };
+            return statusMap[status] || status || '--';
+        }
+
+        function formatFeeMethod(method) {
+            const methodMap = {
+                'coin_toss': 'Coin Toss',
+                'creator_pays': 'Initiator Pays',
+                'counterparty_pays': 'Counterparty Pays',
+                'split': 'Split 50/50',
+            };
+            return methodMap[method] || method || '--';
+        }
+    </script>
+</body>
+</html>

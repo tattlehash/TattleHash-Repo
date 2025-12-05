@@ -16,7 +16,11 @@
       "Bash(wrangler deploy:*)",
       "Bash(wrangler queues list:*)",
       "Bash(npx wrangler deploy)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(wrangler login)",
+      "Bash(npm audit:*)",
+      "Bash(npx wrangler:*)",
+      "Bash(timeout 10 npx wrangler tail:*)"
     ],
     "deny": [],
     "ask": []

@@ -7,6 +7,7 @@ import { runAllTests, isAuthorized } from "./tests/harness";
 import { requireAdmin } from "./middleware/admin";
 import { checkRateLimit } from "./middleware/ratelimit";
 import { addSecurityHeaders } from "./middleware/security-headers";
+import { validateCsrf } from "./middleware/csrf";
 import { getStatus, getMetrics } from "./handlers/admin/health";
 import { handleDisputes } from "./handlers/admin/disputes";
 import { Env } from "./types";
@@ -28,6 +29,10 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     const rateLimitCheck = await checkRateLimit(req, env, limitType);
     if (!rateLimitCheck.ok) return rateLimitCheck.response;
   }
+
+  // CSRF validation for state-changing requests
+  const csrfResult = await validateCsrf(req, env);
+  if (csrfResult) return csrfResult;
 
   // CORS preflight (no security headers needed for OPTIONS)
   if (req.method === "OPTIONS") {
@@ -64,6 +69,12 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
   if (req.method === "POST" && pathname === "/auth/login") {
     const { postLogin } = await import("./handlers/account");
     return postLogin(req, env);
+  }
+
+  // Verify login code (2FA step)
+  if (req.method === "POST" && pathname === "/auth/verify-login-code") {
+    const { postVerifyLoginCode } = await import("./handlers/account");
+    return postVerifyLoginCode(req, env);
   }
 
   // Wallet login
@@ -190,18 +201,11 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     return getCoinTossStatusHandler(req, env, coinTossStatusMatch.groups.id);
   }
 
-  // Game flow
-  if (req.method === "POST" && pathname === "/game/create") {
-    const { postGameCreate } = await import("./handlers/game");
-    return postGameCreate(req, env);
-  }
-  if (req.method === "POST" && pathname === "/game/commit") {
-    const { postGameCommit } = await import("./handlers/game");
-    return postGameCommit(req, env);
-  }
-  if (req.method === "POST" && pathname === "/game/reveal") {
-    const { postGameReveal } = await import("./handlers/game");
-    return postGameReveal(req, env);
+  // Game flow - DISABLED FOR BETA (separate from Coin Toss which remains active)
+  if (pathname.startsWith("/game/")) {
+    return err(501, "feature_disabled", {
+      message: "Game endpoints are disabled for beta. Use Coin Toss via /challenges/:id/coin-toss instead.",
+    });
   }
 
   // ENF (Evidence-and-Forward)

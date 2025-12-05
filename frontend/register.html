@@ -6,7 +6,7 @@
     <title>Create Account - TattleHash</title>
     <meta name="description" content="Create your TattleHash account and start creating immutable attestations.">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    <link rel="icon" type="image/png" href="assets/tattlehash-head-1.png">
 </head>
 <body>
     <div class="auth-page">
@@ -60,6 +60,24 @@
                         required
                         autocomplete="new-password"
                     >
+                </div>
+
+                <div class="form-group" style="margin-top: 24px;">
+                    <label class="checkbox-label" style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">
+                        <input
+                            type="checkbox"
+                            id="terms-agree"
+                            name="termsAgree"
+                            required
+                            style="margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0;"
+                        >
+                        <span style="color: var(--text-secondary); font-size: 14px; line-height: 1.5;">
+                            I am at least 18 years old and agree to the
+                            <a href="terms.html" target="_blank" style="color: var(--accent-cyan);">Terms of Service</a>
+                            and
+                            <a href="privacy.html" target="_blank" style="color: var(--accent-cyan);">Privacy Policy</a>.
+                        </span>
+                    </label>
                 </div>
 
                 <div id="register-error" class="form-hint form-error hidden"></div>

@@ -101,6 +101,9 @@ export async function createCheckoutSession(
     const successUrl = input.success_url || `${baseUrl}/payments/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = input.cancel_url || `${baseUrl}/payments/cancel`;
 
+    const quantity = input.quantity || 1;
+    const totalCredits = product.credits * quantity;
+
     const sessionParams: Record<string, unknown> = {
         mode: 'payment',
         success_url: successUrl,
@@ -108,19 +111,20 @@ export async function createCheckoutSession(
         metadata: {
             user_id: input.user_id,
             product_mode: input.mode,
-            credits: String(product.credits),
+            credits: String(totalCredits),
+            quantity: String(quantity),
         },
         line_items: [
             {
                 price_data: {
                     currency: 'usd',
                     product_data: {
-                        name: product.name,
+                        name: quantity > 1 ? `${product.name} (x${quantity})` : product.name,
                         description: product.description,
                     },
                     unit_amount: product.price_cents,
                 },
-                quantity: 1,
+                quantity: quantity,
             },
         ],
     };

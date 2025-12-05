@@ -228,7 +228,18 @@ export const CreateEnforcedChallengeSchema = z.object({
         counterparty_stake: z.string().regex(/^\d+(\.\d+)?$/),
         stake_currency: z.string().min(1).max(10),
     }),
-});
+}).refine(
+    (data) => {
+        const minValue = parseFloat(data.thresholds.min_usd_value);
+        const maxValue = data.thresholds.max_usd_value ? parseFloat(data.thresholds.max_usd_value) : minValue;
+        // Beta limit: max $1,000 per transaction
+        return minValue <= BETA_LIMITS.MAX_TRANSACTION_USD && maxValue <= BETA_LIMITS.MAX_TRANSACTION_USD;
+    },
+    {
+        message: `Beta limit: Transaction value cannot exceed $${BETA_LIMITS.MAX_TRANSACTION_USD.toLocaleString()}`,
+        path: ['thresholds', 'min_usd_value'],
+    }
+);
 
 export const DepositStakeSchema = z.object({
     challenge_id: z.string().uuid(),
@@ -254,6 +265,13 @@ export const ENFORCED_DEFAULTS = {
     RESPONSE_TIMEOUT_SECONDS: 86400,    // 24 hours
     DISPUTE_TIMEOUT_SECONDS: 259200,    // 72 hours
     REQUIRED_CONFIRMATIONS: 12,
+} as const;
+
+// Beta limits - transaction value caps
+export const BETA_LIMITS = {
+    MAX_TRANSACTION_USD: 1000,          // $1,000 max per enforced transaction
+    MAX_CREDITS_PER_PURCHASE: 25,       // 25 credits max per purchase
+    MAX_ATTESTATIONS_PER_DAY: 10,       // 10 attestations per user per day
 } as const;
 
 export const TIMEOUT_CONSTRAINTS = {

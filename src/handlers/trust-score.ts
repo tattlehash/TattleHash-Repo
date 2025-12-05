@@ -6,6 +6,7 @@
 
 import { ok, err, parseBody } from '../lib/http';
 import { checkRateLimit } from '../middleware/ratelimit';
+import { authenticateRequest } from '../middleware/auth';
 import type { Env } from '../types';
 import {
     WalletAddressSchema,
@@ -64,6 +65,14 @@ export async function postBatchTrustScore(
     req: Request,
     env: Env
 ): Promise<Response> {
+    // Require authentication for batch requests (protects against abuse)
+    const authResult = await authenticateRequest(req, env);
+    if (!authResult.ok) {
+        return err(authResult.error.status, authResult.error.code, {
+            message: authResult.error.message,
+        });
+    }
+
     // Parse and validate request body
     const bodyResult = await parseBody(req);
     if (!bodyResult.ok) {
