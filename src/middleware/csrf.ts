@@ -15,7 +15,13 @@ const ALLOWED_ORIGINS = [
     'https://verify.tattlehash.com',
     'https://app.tattlehash.com',
     'https://tattlehash-worker.ashiscock.workers.dev',
+    'https://tattlehash-web.pages.dev',
 ];
+
+// Check if origin is a Cloudflare Pages preview deployment
+function isPagesPreviewOrigin(origin: string): boolean {
+    return /^https:\/\/[a-f0-9]+\.tattlehash-web\.pages\.dev$/.test(origin);
+}
 
 // Development origins (only allowed in non-production)
 const DEV_ORIGINS = [
@@ -76,6 +82,11 @@ function isValidOrigin(origin: string | null, env: Env): boolean {
 
     // Check production origins
     if (ALLOWED_ORIGINS.includes(origin)) {
+        return true;
+    }
+
+    // Allow Cloudflare Pages preview deployments
+    if (isPagesPreviewOrigin(origin)) {
         return true;
     }
 
