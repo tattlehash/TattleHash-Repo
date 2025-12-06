@@ -7,7 +7,15 @@
 
 import type { Env } from '../types';
 import type { EmailOptions, EmailResult, FireNotificationData, DownloadToken } from './types';
-import { generateFireNotificationEmail } from './templates';
+import {
+    generateFireNotificationEmail,
+    generateLoginCodeEmail,
+    generateEmailVerificationEmail,
+    generatePasswordResetEmail,
+    type LoginCodeEmailData,
+    type EmailVerificationData,
+    type PasswordResetData,
+} from './templates';
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const FROM_EMAIL = 'TattleHash <notifications@tattlehash.com>';
@@ -175,6 +183,121 @@ export async function sendFireNotification(
             at: 'fire_notification_sent',
             challenge_id: data.challengeId,
             to: data.counterpartyEmail,
+            email_id: result.id,
+        }));
+    }
+
+    return result;
+}
+
+// ============================================================================
+// Auth Email Functions
+// ============================================================================
+
+/**
+ * Send login verification code email
+ */
+export async function sendLoginCode(
+    env: Env,
+    email: string,
+    code: string,
+    expiresInMinutes: number = 10
+): Promise<EmailResult> {
+    const { html, text } = generateLoginCodeEmail({
+        email,
+        code,
+        expiresInMinutes,
+    });
+
+    const result = await sendEmail(env, {
+        to: email,
+        subject: `${code} is your TattleHash login code`,
+        html,
+        text,
+        tags: [
+            { name: 'type', value: 'login_code' },
+        ],
+    });
+
+    if (result.ok) {
+        console.log(JSON.stringify({
+            t: Date.now(),
+            at: 'login_code_email_sent',
+            to: email,
+            email_id: result.id,
+        }));
+    }
+
+    return result;
+}
+
+/**
+ * Send email verification email (for registration)
+ */
+export async function sendEmailVerification(
+    env: Env,
+    email: string,
+    token: string,
+    expiresInHours: number = 24
+): Promise<EmailResult> {
+    const { html, text } = generateEmailVerificationEmail({
+        email,
+        token,
+        expiresInHours,
+    });
+
+    const result = await sendEmail(env, {
+        to: email,
+        subject: 'Verify your TattleHash email address',
+        html,
+        text,
+        tags: [
+            { name: 'type', value: 'email_verification' },
+        ],
+    });
+
+    if (result.ok) {
+        console.log(JSON.stringify({
+            t: Date.now(),
+            at: 'email_verification_sent',
+            to: email,
+            email_id: result.id,
+        }));
+    }
+
+    return result;
+}
+
+/**
+ * Send password reset email
+ */
+export async function sendPasswordReset(
+    env: Env,
+    email: string,
+    token: string,
+    expiresInMinutes: number = 15
+): Promise<EmailResult> {
+    const { html, text } = generatePasswordResetEmail({
+        email,
+        token,
+        expiresInMinutes,
+    });
+
+    const result = await sendEmail(env, {
+        to: email,
+        subject: 'Reset your TattleHash password',
+        html,
+        text,
+        tags: [
+            { name: 'type', value: 'password_reset' },
+        ],
+    });
+
+    if (result.ok) {
+        console.log(JSON.stringify({
+            t: Date.now(),
+            at: 'password_reset_email_sent',
+            to: email,
             email_id: result.id,
         }));
     }

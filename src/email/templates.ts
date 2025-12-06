@@ -243,3 +243,298 @@ function formatDate(dateStr: string): string {
         return dateStr;
     }
 }
+
+// ============================================================================
+// Auth Email Templates
+// ============================================================================
+
+export interface LoginCodeEmailData {
+    email: string;
+    code: string;
+    expiresInMinutes: number;
+}
+
+export interface EmailVerificationData {
+    email: string;
+    token: string;
+    expiresInHours: number;
+}
+
+export interface PasswordResetData {
+    email: string;
+    token: string;
+    expiresInMinutes: number;
+}
+
+/**
+ * Generate login verification code email
+ */
+export function generateLoginCodeEmail(data: LoginCodeEmailData): { html: string; text: string } {
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Login Code</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0f; color: #e0e0e0;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 500px; margin: 0 auto; background-color: #12121a; border-radius: 16px; overflow: hidden; border: 1px solid #2a2a3a;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 32px 40px; background: linear-gradient(135deg, ${BRAND_COLOR}22 0%, transparent 100%); border-bottom: 1px solid #2a2a3a; text-align: center;">
+                            <span style="font-size: 24px; font-weight: 700; color: #ffffff;">
+                                <span style="color: ${BRAND_COLOR};">&#128737;</span> TattleHash
+                            </span>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px; text-align: center;">
+                            <p style="margin: 0 0 24px 0; font-size: 16px; color: #aaa;">
+                                Your login verification code is:
+                            </p>
+
+                            <!-- Code Box -->
+                            <div style="background: linear-gradient(135deg, #1a1a24 0%, #12121a 100%); border: 2px solid ${BRAND_COLOR}44; border-radius: 12px; padding: 24px; margin: 0 auto 24px; display: inline-block;">
+                                <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: ${BRAND_COLOR}; font-family: 'Courier New', monospace;">
+                                    ${escapeHtml(data.code)}
+                                </span>
+                            </div>
+
+                            <p style="margin: 0 0 8px 0; font-size: 14px; color: #888;">
+                                This code expires in ${data.expiresInMinutes} minutes.
+                            </p>
+                            <p style="margin: 0; font-size: 13px; color: #666;">
+                                If you didn't request this code, you can safely ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 40px; text-align: center; border-top: 1px solid #2a2a3a;">
+                            <p style="margin: 0; font-size: 11px; color: #555;">
+                                &#128737; TattleHash - Immutable Proof, Zero Trust Required
+                                <br><br>
+                                <a href="${BASE_URL}/privacy.html" style="color: #666; text-decoration: underline;">Privacy Policy</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+
+    const text = `
+Your TattleHash Login Code
+
+Your verification code is: ${data.code}
+
+This code expires in ${data.expiresInMinutes} minutes.
+
+If you didn't request this code, you can safely ignore this email.
+
+---
+TattleHash - Immutable Proof, Zero Trust Required
+    `.trim();
+
+    return { html, text };
+}
+
+/**
+ * Generate email verification email
+ */
+export function generateEmailVerificationEmail(data: EmailVerificationData): { html: string; text: string } {
+    const verifyUrl = `${BASE_URL}/verify-email.html?token=${encodeURIComponent(data.token)}`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0f; color: #e0e0e0;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 500px; margin: 0 auto; background-color: #12121a; border-radius: 16px; overflow: hidden; border: 1px solid #2a2a3a;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 32px 40px; background: linear-gradient(135deg, ${BRAND_COLOR}22 0%, transparent 100%); border-bottom: 1px solid #2a2a3a; text-align: center;">
+                            <span style="font-size: 24px; font-weight: 700; color: #ffffff;">
+                                <span style="color: ${BRAND_COLOR};">&#128737;</span> TattleHash
+                            </span>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px; text-align: center;">
+                            <p style="margin: 0 0 16px 0; font-size: 20px; color: #fff; font-weight: 600;">
+                                Welcome to TattleHash!
+                            </p>
+                            <p style="margin: 0 0 32px 0; font-size: 15px; color: #aaa; line-height: 1.6;">
+                                Please verify your email address to complete your account setup.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, ${BRAND_COLOR} 0%, ${BRAND_COLOR_DARK} 100%); color: #0a0a0f; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 600;">
+                                Verify Email Address
+                            </a>
+
+                            <p style="margin: 32px 0 8px 0; font-size: 13px; color: #666;">
+                                This link expires in ${data.expiresInHours} hours.
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #555;">
+                                If you didn't create an account, you can ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 40px; text-align: center; border-top: 1px solid #2a2a3a;">
+                            <p style="margin: 0 0 12px 0; font-size: 11px; color: #666;">
+                                If the button doesn't work, copy and paste this link:
+                            </p>
+                            <p style="margin: 0; font-size: 10px; color: #555; word-break: break-all;">
+                                ${escapeHtml(verifyUrl)}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+
+    const text = `
+Welcome to TattleHash!
+
+Please verify your email address by clicking the link below:
+
+${verifyUrl}
+
+This link expires in ${data.expiresInHours} hours.
+
+If you didn't create an account, you can ignore this email.
+
+---
+TattleHash - Immutable Proof, Zero Trust Required
+    `.trim();
+
+    return { html, text };
+}
+
+/**
+ * Generate password reset email
+ */
+export function generatePasswordResetEmail(data: PasswordResetData): { html: string; text: string } {
+    const resetUrl = `${BASE_URL}/reset-password.html?token=${encodeURIComponent(data.token)}`;
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Your Password</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0f; color: #e0e0e0;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 500px; margin: 0 auto; background-color: #12121a; border-radius: 16px; overflow: hidden; border: 1px solid #2a2a3a;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 32px 40px; background: linear-gradient(135deg, ${BRAND_COLOR}22 0%, transparent 100%); border-bottom: 1px solid #2a2a3a; text-align: center;">
+                            <span style="font-size: 24px; font-weight: 700; color: #ffffff;">
+                                <span style="color: ${BRAND_COLOR};">&#128737;</span> TattleHash
+                            </span>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px; text-align: center;">
+                            <p style="margin: 0 0 16px 0; font-size: 20px; color: #fff; font-weight: 600;">
+                                Password Reset Request
+                            </p>
+                            <p style="margin: 0 0 32px 0; font-size: 15px; color: #aaa; line-height: 1.6;">
+                                We received a request to reset your password. Click the button below to create a new password.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, ${BRAND_COLOR} 0%, ${BRAND_COLOR_DARK} 100%); color: #0a0a0f; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 600;">
+                                Reset Password
+                            </a>
+
+                            <p style="margin: 32px 0 8px 0; font-size: 13px; color: #ff9800;">
+                                This link expires in ${data.expiresInMinutes} minutes.
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #555;">
+                                If you didn't request a password reset, you can safely ignore this email.<br>
+                                Your password will remain unchanged.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Security Notice -->
+                    <tr>
+                        <td style="padding: 20px 40px; background-color: #1a1a24; border-top: 1px solid #2a2a3a;">
+                            <p style="margin: 0; font-size: 12px; color: #888; text-align: center;">
+                                &#128274; For security reasons, this link can only be used once.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 40px; text-align: center; border-top: 1px solid #2a2a3a;">
+                            <p style="margin: 0 0 12px 0; font-size: 11px; color: #666;">
+                                If the button doesn't work, copy and paste this link:
+                            </p>
+                            <p style="margin: 0; font-size: 10px; color: #555; word-break: break-all;">
+                                ${escapeHtml(resetUrl)}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+
+    const text = `
+Password Reset Request
+
+We received a request to reset your TattleHash password.
+
+Click the link below to create a new password:
+${resetUrl}
+
+This link expires in ${data.expiresInMinutes} minutes.
+
+If you didn't request a password reset, you can safely ignore this email.
+Your password will remain unchanged.
+
+---
+TattleHash - Immutable Proof, Zero Trust Required
+    `.trim();
+
+    return { html, text };
+}

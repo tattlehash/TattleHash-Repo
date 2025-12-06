@@ -23,6 +23,7 @@ import {
 import { authenticateRequest } from '../middleware/auth';
 import { checkLoginRateLimit } from '../middleware/ratelimit';
 import { getCreditSummary } from '../credits';
+import { sendLoginCode, sendEmailVerification, sendPasswordReset } from '../email';
 import { z } from 'zod';
 
 // ============================================================================
@@ -197,20 +198,24 @@ export async function postRegister(req: Request, env: Env): Promise<Response> {
         ]
     );
 
-    // Log verification token (in production, send email)
+    // Send verification email
+    const emailResult = await sendEmailVerification(env, normalizedEmail, verificationToken, 24);
+
+    // Log for debugging (without token in production)
     console.log(JSON.stringify({
         t: now,
         at: 'email_verification_token_created',
         user_id: userId,
         email: normalizedEmail,
-        token: verificationToken, // In production: send via email, don't log
+        email_sent: emailResult.ok,
+        email_error: emailResult.error,
         expires_at: new Date(verificationExpires).toISOString(),
     }));
 
     return ok({
         user_id: userId,
         message: 'Account created. Please check your email to verify your account.',
-        // Include token in response for development/testing
+        // Include token in response for development/testing only
         verification_token: env.NODE_ENV !== 'production' ? verificationToken : undefined,
     }, { status: 201 });
 }
@@ -297,14 +302,18 @@ export async function postLogin(req: Request, env: Env): Promise<Response> {
         { expirationTtl: 600 } // 10 minutes
     );
 
-    // Log verification code (in production, send via email)
+    // Send verification code via email
+    const emailResult = await sendLoginCode(env, normalizedEmail, verificationCode, 10);
+
+    // Log for debugging (without code in production)
     console.log(JSON.stringify({
         t: now,
         at: 'login_verification_code_sent',
         user_id: user.id,
         email: normalizedEmail,
         session_id: sessionId,
-        code: verificationCode, // In production: send via email, don't log
+        email_sent: emailResult.ok,
+        email_error: emailResult.error,
         expires_at: new Date(expiresAt).toISOString(),
     }));
 
@@ -314,7 +323,7 @@ export async function postLogin(req: Request, env: Env): Promise<Response> {
         session_id: sessionId,
         message: 'A verification code has been sent to your email.',
         expires_in: 600, // seconds
-        // Include code in response for development/testing
+        // Include code in response for development/testing only
         verification_code: env.NODE_ENV !== 'production' ? verificationCode : undefined,
     });
 }
@@ -596,19 +605,23 @@ export async function postForgotPassword(req: Request, env: Env): Promise<Respon
         [crypto.randomUUID(), user.id, resetTokenHash, expiresAt, now]
     );
 
-    // Log token (in production, send email)
+    // Send password reset email
+    const emailResult = await sendPasswordReset(env, normalizedEmail, resetToken, 15);
+
+    // Log for debugging (without token in production)
     console.log(JSON.stringify({
         t: now,
         at: 'password_reset_token_created',
         user_id: user.id,
         email: normalizedEmail,
-        token: resetToken, // In production: send via email, don't log
+        email_sent: emailResult.ok,
+        email_error: emailResult.error,
         expires_at: new Date(expiresAt).toISOString(),
     }));
 
     return ok({
         message: 'If an account exists with this email, a reset link has been sent.',
-        // Include token in response for development/testing
+        // Include token in response for development/testing only
         reset_token: env.NODE_ENV !== 'production' ? resetToken : undefined,
     });
 }

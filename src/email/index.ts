@@ -7,9 +7,17 @@
 export {
     sendEmail,
     sendFireNotification,
+    sendLoginCode,
+    sendEmailVerification,
+    sendPasswordReset,
     generateAcceptToken,
     generateDownloadToken,
     validateDownloadToken,
 } from './service';
-export { generateFireNotificationEmail } from './templates';
+export {
+    generateFireNotificationEmail,
+    generateLoginCodeEmail,
+    generateEmailVerificationEmail,
+    generatePasswordResetEmail,
+} from './templates';
 export type { EmailOptions, FireNotificationData, DownloadToken } from './types';
