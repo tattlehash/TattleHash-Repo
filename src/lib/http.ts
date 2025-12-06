@@ -16,14 +16,23 @@ const ALLOWED_ORIGINS = [
   'https://tattlehash.com',
   'https://www.tattlehash.com',
   'https://verify.tattlehash.com',
+  'https://tattlehash-web.pages.dev',
 ];
+
+// Also allow *.tattlehash-web.pages.dev preview deployments
+function isAllowedOrigin(origin: string): boolean {
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  // Allow Cloudflare Pages preview deployments
+  if (/^https:\/\/[a-f0-9]+\.tattlehash-web\.pages\.dev$/.test(origin)) return true;
+  return false;
+}
 
 /**
  * Get CORS origin header value based on request origin.
  * Returns the origin if allowed, otherwise returns the primary domain.
  */
 export function getCorsOrigin(requestOrigin?: string | null): string {
-  if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+  if (requestOrigin && isAllowedOrigin(requestOrigin)) {
     return requestOrigin;
   }
   // Default to primary domain for non-browser requests
