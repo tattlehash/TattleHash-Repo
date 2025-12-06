@@ -468,25 +468,98 @@ async function checkTxCount(
 /**
  * Check 5: Chainabuse Database Lookup
  * Badge threshold: 0 reports
+ * API: GET https://api.chainabuse.com/v0/reports?address={wallet}
  */
 async function checkChainabuse(
     env: Env,
     data: { wallet_address: string }
 ): Promise<CheckResult> {
-    // TODO: Integrate with actual Chainabuse API
-    // For now, simulate a clean result
+    const apiKey = env.CHAINABUSE_API_KEY;
 
-    return {
-        status: 'COMPLETED',
-        signal_type: 'positive',
-        signal_text: 'Databases checked: No reports found',
-        meets_badge_threshold: true,
-        raw_data: JSON.stringify({
-            chainabuse_reports: 0,
-            checked_at: new Date().toISOString(),
-            note: 'API integration pending',
-        }),
-    };
+    if (!apiKey) {
+        console.warn('CHAINABUSE_API_KEY not configured, skipping check');
+        return {
+            status: 'COMPLETED',
+            signal_type: 'positive',
+            signal_text: 'Scam database check skipped (not configured)',
+            meets_badge_threshold: true,
+            raw_data: JSON.stringify({
+                chainabuse_reports: 0,
+                checked_at: new Date().toISOString(),
+                note: 'API key not configured',
+            }),
+        };
+    }
+
+    try {
+        const response = await fetch(
+            `https://api.chainabuse.com/v0/reports?address=${data.wallet_address}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Accept': 'application/json',
+                },
+            }
+        );
+
+        if (!response.ok) {
+            console.error(`Chainabuse API error: ${response.status}`);
+            return {
+                status: 'COMPLETED',
+                signal_type: 'warning',
+                signal_text: 'Unable to check scam databases',
+                meets_badge_threshold: false,
+                raw_data: JSON.stringify({
+                    error: `API returned ${response.status}`,
+                    checked_at: new Date().toISOString(),
+                }),
+            };
+        }
+
+        const result = await response.json() as { reports?: Array<{ id: string; category: string; description?: string }> };
+        const reports = result.reports || [];
+        const reportCount = reports.length;
+
+        if (reportCount > 0) {
+            // Address has been reported - this is a warning signal
+            const categories = [...new Set(reports.map(r => r.category))].join(', ');
+            return {
+                status: 'COMPLETED',
+                signal_type: 'warning',
+                signal_text: `${reportCount} report(s) found: ${categories}`,
+                meets_badge_threshold: false,
+                raw_data: JSON.stringify({
+                    chainabuse_reports: reportCount,
+                    categories,
+                    checked_at: new Date().toISOString(),
+                }),
+            };
+        }
+
+        // Clean address - no reports found
+        return {
+            status: 'COMPLETED',
+            signal_type: 'positive',
+            signal_text: 'Scam databases checked: No reports found',
+            meets_badge_threshold: true,
+            raw_data: JSON.stringify({
+                chainabuse_reports: 0,
+                checked_at: new Date().toISOString(),
+            }),
+        };
+    } catch (error) {
+        console.error('Chainabuse check failed:', error);
+        return {
+            status: 'COMPLETED',
+            signal_type: 'warning',
+            signal_text: 'Unable to check scam databases',
+            meets_badge_threshold: false,
+            raw_data: JSON.stringify({
+                error: error instanceof Error ? error.message : 'Unknown error',
+                checked_at: new Date().toISOString(),
+            }),
+        };
+    }
 }
 
 // ============================================================================

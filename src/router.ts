@@ -36,11 +36,14 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
 
   // CORS preflight (no security headers needed for OPTIONS)
   if (req.method === "OPTIONS") {
+    const origin = req.headers.get('origin');
+    const { getCorsOrigin } = await import("./lib/http");
     return new Response(null, {
       headers: {
-        "access-control-allow-origin": "*",
+        "access-control-allow-origin": getCorsOrigin(origin),
         "access-control-allow-headers": "content-type, authorization, idempotency-key, x-test-token",
         "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+        "access-control-allow-credentials": "true",
       },
     });
   }

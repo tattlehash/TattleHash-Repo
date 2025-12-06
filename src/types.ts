@@ -46,6 +46,8 @@ export interface Env {
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   RESEND_API_KEY?: string;
+  ALCHEMY_API_KEY?: string;
+  CHAINABUSE_API_KEY?: string;
 
   // Feature Flags
   TEST_TOKEN?: string;

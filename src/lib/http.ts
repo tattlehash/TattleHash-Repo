@@ -11,12 +11,32 @@
 
 const API_VERSION = "2.0.0";
 
-export function baseHeaders(extra: Record<string, string> = {}) {
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://tattlehash.com',
+  'https://www.tattlehash.com',
+  'https://verify.tattlehash.com',
+];
+
+/**
+ * Get CORS origin header value based on request origin.
+ * Returns the origin if allowed, otherwise returns the primary domain.
+ */
+export function getCorsOrigin(requestOrigin?: string | null): string {
+  if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  // Default to primary domain for non-browser requests
+  return 'https://tattlehash.com';
+}
+
+export function baseHeaders(extra: Record<string, string> = {}, requestOrigin?: string | null) {
   return {
     "content-type": "application/json; charset=utf-8",
-    "access-control-allow-origin": "*",
-    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-origin": getCorsOrigin(requestOrigin),
+    "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
     "access-control-allow-headers": "content-type, authorization, idempotency-key, x-test-token",
+    "access-control-allow-credentials": "true",
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY",
     "referrer-policy": "no-referrer",
