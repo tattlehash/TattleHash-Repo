@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run lint)"
+      "Bash(node -e \"\nfetch(''https://tattlehash-worker.ashiscock.workers.dev/auth/forgot-password'', {\n  method: ''POST'',\n  headers: { \n    ''Content-Type'': ''application/json'',\n    ''Origin'': ''https://tattlehash-web.pages.dev''\n  },\n  body: JSON.stringify({ email: ''ashiscock@gmail.com'' })\n}).then(r => {\n  console.log(''Status:'', r.status);\n  console.log(''CORS Origin:'', r.headers.get(''access-control-allow-origin''));\n  return r.json();\n}).then(d => console.log(''Response:'', d.ok ? ''Success'' : d)).catch(console.error);\n\")"
     ],
     "deny": [],
     "ask": []

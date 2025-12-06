@@ -2,7 +2,7 @@ import { getHealth } from "./handlers/health";
 import { postAttest } from "./handlers/attest";
 import { postSweep } from "./handlers/sweep";
 import { getReceipt } from "./handlers/receipt";
-import { err, ok } from "./lib/http";
+import { err, ok, getCorsOrigin } from "./lib/http";
 import { runAllTests, isAuthorized } from "./tests/harness";
 import { requireAdmin } from "./middleware/admin";
 import { checkRateLimit, checkVerificationRateLimit } from "./middleware/ratelimit";
@@ -15,7 +15,22 @@ import { Env } from "./types";
 export async function route(req: Request, env: Env): Promise<Response> {
   // All responses get security headers applied
   const response = await routeInternal(req, env);
-  return addSecurityHeaders(response);
+  const securedResponse = addSecurityHeaders(response);
+
+  // Fix CORS origin header based on request origin
+  const origin = req.headers.get('origin');
+  if (origin) {
+    const corsOrigin = getCorsOrigin(origin);
+    const newHeaders = new Headers(securedResponse.headers);
+    newHeaders.set('access-control-allow-origin', corsOrigin);
+    return new Response(securedResponse.body, {
+      status: securedResponse.status,
+      statusText: securedResponse.statusText,
+      headers: newHeaders,
+    });
+  }
+
+  return securedResponse;
 }
 
 async function routeInternal(req: Request, env: Env): Promise<Response> {

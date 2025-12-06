@@ -8,7 +8,7 @@ import type { FireNotificationData } from './types';
 
 const BRAND_COLOR = '#00d4ff';
 const BRAND_COLOR_DARK = '#0099cc';
-const BASE_URL = 'https://tattlehash.com';
+const BASE_URL = 'https://tattlehash-web.pages.dev';
 
 /**
  * Generate Fire mode notification email
