@@ -8,7 +8,7 @@
 // Configuration
 // ============================================================================
 
-const API_BASE = 'https://tattlehash-worker.ashiscock.workers.dev';
+const API_BASE = 'https://api.tattlehash.com';
 
 // ============================================================================
 // Authentication Helpers

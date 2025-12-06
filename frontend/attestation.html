@@ -310,7 +310,7 @@
         }
 
         function generateQRCode(id) {
-            const verifyUrl = `https://tattlehash-worker.ashiscock.workers.dev/verify?id=${id}`;
+            const verifyUrl = `https://verify.tattlehash.com/verify.html?id=${id}`;
             const qrContainer = document.getElementById('qr-code');
 
             if (typeof QRCode !== 'undefined') {
@@ -369,7 +369,7 @@
         function copyVerifyLink() {
             if (!attestation) return;
 
-            const link = `https://tattlehash-worker.ashiscock.workers.dev/verify?id=${attestation.id}`;
+            const link = `https://verify.tattlehash.com/verify.html?id=${attestation.id}`;
             navigator.clipboard.writeText(link).then(() => {
                 showToast('Verification link copied!', 'success');
             }).catch(() => {
