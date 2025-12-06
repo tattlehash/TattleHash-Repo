@@ -238,7 +238,9 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.message || 'Login failed');
+                    // Error response format: { ok: false, error: { code, message } }
+                    const errorMsg = data.error?.message || data.message || 'Login failed';
+                    throw new Error(errorMsg);
                 }
 
                 // Check if 2FA verification is required
@@ -316,7 +318,8 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.message || 'Verification failed');
+                    const errorMsg = data.error?.message || data.message || 'Verification failed';
+                    throw new Error(errorMsg);
                 }
 
                 // Success - complete login

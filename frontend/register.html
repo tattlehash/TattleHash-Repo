@@ -194,20 +194,19 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.message || 'Registration failed');
+                    // Error response format: { ok: false, error: { code, message } }
+                    const errorMsg = data.error?.message || data.message || 'Registration failed';
+                    throw new Error(errorMsg);
                 }
 
-                // Store token
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
+                // Registration successful - email verification required
+                // Show success message
+                showToast(data.message || 'Account created! Check your email to verify.', 'success');
 
-                // Show success
-                showToast('Account created! Redirecting...', 'success');
-
-                // Redirect to dashboard
+                // Redirect to login page after a short delay
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
+                    window.location.href = 'login.html';
+                }, 2000);
 
             } catch (error) {
                 errorDiv.textContent = error.message;
