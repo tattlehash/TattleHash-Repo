@@ -7,64 +7,154 @@
     <meta name="description" content="Sign in to your TattleHash account to manage your attestations.">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/png" href="assets/tattlehash-head-1.png">
+    <style>
+        .code-input-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 24px 0;
+        }
+        .code-input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+        }
+        .code-input:focus {
+            border-color: var(--accent-cyan);
+            outline: none;
+        }
+        .verification-info {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .verification-info .email-sent {
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+        .resend-link {
+            color: var(--text-muted);
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .resend-link:hover {
+            color: var(--accent-cyan);
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 14px;
+            text-decoration: none;
+            margin-bottom: 16px;
+        }
+        .back-link:hover {
+            color: var(--text-primary);
+        }
+    </style>
 </head>
 <body>
     <div class="auth-page">
         <div class="card auth-card animate-fade-in">
             <div class="auth-header">
                 <a href="index.html" class="logo">
-                    <div class="logo-icon">🛡️</div>
+                    <div class="logo-icon">&#9879;&#65039;</div>
                     <span>TattleHash</span>
                 </a>
-                <h1>Welcome Back</h1>
-                <p>Sign in to manage your attestations</p>
+                <h1 id="auth-title">Welcome Back</h1>
+                <p id="auth-subtitle">Sign in to manage your attestations</p>
             </div>
 
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label class="form-label" for="email">Email Address</label>
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        class="form-input"
-                        placeholder="you@example.com"
-                        required
-                        autocomplete="email"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="password">Password</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        class="form-input"
-                        placeholder="Enter your password"
-                        required
-                        autocomplete="current-password"
-                    >
-                    <div style="text-align: right; margin-top: 8px;">
-                        <a href="forgot-password.html" style="color: var(--text-muted); font-size: 13px; text-decoration: none;">Forgot password?</a>
+            <!-- Step 1: Email/Password Form -->
+            <div id="credentials-step">
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-input"
+                            placeholder="you@example.com"
+                            required
+                            autocomplete="email"
+                        >
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            placeholder="Enter your password"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <div style="text-align: right; margin-top: 8px;">
+                            <a href="forgot-password.html" style="color: var(--text-muted); font-size: 13px; text-decoration: none;">Forgot password?</a>
+                        </div>
+                    </div>
+
+                    <div id="login-error" class="form-hint form-error hidden"></div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="auth-divider">or</div>
+
+                <button type="button" class="btn btn-secondary btn-block" onclick="connectWallet()">
+                    <span>&#129418;</span> Connect Wallet
+                </button>
+
+                <div class="auth-footer">
+                    Don't have an account? <a href="register.html">Create one</a>
+                </div>
+            </div>
+
+            <!-- Step 2: Verification Code Form -->
+            <div id="verification-step" class="hidden">
+                <a href="#" class="back-link" onclick="backToCredentials(event)">
+                    &larr; Back
+                </a>
+
+                <div class="verification-info">
+                    <p>We sent a verification code to</p>
+                    <p class="email-sent" id="verification-email"></p>
+                    <p class="text-muted" style="margin-top: 8px; font-size: 13px;">Enter the 6-digit code to continue</p>
                 </div>
 
-                <div id="login-error" class="form-hint form-error hidden"></div>
+                <form id="verify-form" onsubmit="handleVerifyCode(event)">
+                    <div class="code-input-container">
+                        <input type="text" class="code-input" maxlength="1" data-index="0" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                        <input type="text" class="code-input" maxlength="1" data-index="1" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-input" maxlength="1" data-index="2" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-input" maxlength="1" data-index="3" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-input" maxlength="1" data-index="4" inputmode="numeric" pattern="[0-9]">
+                        <input type="text" class="code-input" maxlength="1" data-index="5" inputmode="numeric" pattern="[0-9]">
+                    </div>
 
-                <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
-                    Sign In
-                </button>
-            </form>
+                    <div id="verify-error" class="form-hint form-error hidden"></div>
 
-            <div class="auth-divider">or</div>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="verify-btn">
+                        Verify Code
+                    </button>
+                </form>
 
-            <button type="button" class="btn btn-secondary btn-block" onclick="connectWallet()">
-                <span>🦊</span> Connect Wallet
-            </button>
-
-            <div class="auth-footer">
-                Don't have an account? <a href="register.html">Create one</a>
+                <div style="text-align: center; margin-top: 16px;">
+                    <span class="resend-link" id="resend-link" onclick="resendCode()">Resend code</span>
+                    <span id="resend-countdown" class="text-muted hidden" style="font-size: 13px;"></span>
+                </div>
             </div>
         </div>
     </div>
@@ -74,6 +164,12 @@
 
     <script src="js/app.js"></script>
     <script>
+        // State
+        let currentSessionId = null;
+        let currentEmail = null;
+        let resendCooldown = 0;
+
+        // Step 1: Handle initial login
         async function handleLogin(event) {
             event.preventDefault();
 
@@ -106,26 +202,206 @@
                     throw new Error(data.message || 'Login failed');
                 }
 
-                // Store token
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-
-                // Show success
-                showToast('Login successful! Redirecting...', 'success');
-
-                // Redirect to dashboard
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 1000);
+                // Check if 2FA verification is required
+                if (data.status === 'verification_required') {
+                    currentSessionId = data.session_id;
+                    currentEmail = email;
+                    showVerificationStep(email);
+                    showToast('Verification code sent to your email', 'success');
+                } else if (data.token) {
+                    // Direct token (legacy/dev mode)
+                    completeLogin(data);
+                } else {
+                    throw new Error('Unexpected response from server');
+                }
 
             } catch (error) {
                 errorDiv.textContent = error.message;
                 errorDiv.classList.remove('hidden');
+            } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Sign In';
             }
         }
 
+        // Show verification step
+        function showVerificationStep(email) {
+            document.getElementById('credentials-step').classList.add('hidden');
+            document.getElementById('verification-step').classList.remove('hidden');
+            document.getElementById('verification-email').textContent = email;
+            document.getElementById('auth-title').textContent = 'Verify Your Email';
+            document.getElementById('auth-subtitle').textContent = 'Enter the code we sent you';
+
+            // Focus first code input
+            document.querySelector('.code-input').focus();
+
+            // Start resend cooldown
+            startResendCooldown(60);
+        }
+
+        // Step 2: Handle verification code
+        async function handleVerifyCode(event) {
+            event.preventDefault();
+
+            const inputs = document.querySelectorAll('.code-input');
+            const code = Array.from(inputs).map(i => i.value).join('');
+            const submitBtn = document.getElementById('verify-btn');
+            const errorDiv = document.getElementById('verify-error');
+
+            if (code.length !== 6) {
+                errorDiv.textContent = 'Please enter the 6-digit code';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Reset error
+            errorDiv.classList.add('hidden');
+            errorDiv.textContent = '';
+
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Verifying...';
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/verify-login-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        code: code,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Verification failed');
+                }
+
+                // Success - complete login
+                completeLogin(data);
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                // Clear inputs on error
+                inputs.forEach(input => input.value = '');
+                inputs[0].focus();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify Code';
+            }
+        }
+
+        // Complete login after token received
+        function completeLogin(data) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            showToast('Login successful! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
+        }
+
+        // Back to credentials step
+        function backToCredentials(event) {
+            event.preventDefault();
+            document.getElementById('verification-step').classList.add('hidden');
+            document.getElementById('credentials-step').classList.remove('hidden');
+            document.getElementById('auth-title').textContent = 'Welcome Back';
+            document.getElementById('auth-subtitle').textContent = 'Sign in to manage your attestations';
+            currentSessionId = null;
+            // Clear code inputs
+            document.querySelectorAll('.code-input').forEach(input => input.value = '');
+        }
+
+        // Resend code
+        async function resendCode() {
+            if (resendCooldown > 0) return;
+
+            const resendLink = document.getElementById('resend-link');
+            resendLink.textContent = 'Sending...';
+
+            try {
+                // Re-login to get new code
+                const email = currentEmail;
+                const password = document.getElementById('password').value;
+
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'verification_required') {
+                    currentSessionId = data.session_id;
+                    showToast('New code sent to your email', 'success');
+                    startResendCooldown(60);
+                }
+            } catch (error) {
+                showToast('Failed to resend code', 'error');
+            }
+
+            resendLink.textContent = 'Resend code';
+        }
+
+        // Resend cooldown timer
+        function startResendCooldown(seconds) {
+            resendCooldown = seconds;
+            const resendLink = document.getElementById('resend-link');
+            const countdown = document.getElementById('resend-countdown');
+
+            resendLink.classList.add('hidden');
+            countdown.classList.remove('hidden');
+
+            const interval = setInterval(() => {
+                resendCooldown--;
+                countdown.textContent = `Resend in ${resendCooldown}s`;
+
+                if (resendCooldown <= 0) {
+                    clearInterval(interval);
+                    resendLink.classList.remove('hidden');
+                    countdown.classList.add('hidden');
+                }
+            }, 1000);
+        }
+
+        // Code input auto-advance
+        document.querySelectorAll('.code-input').forEach((input, index, inputs) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+
+            // Handle paste
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text');
+                const digits = paste.replace(/\D/g, '').slice(0, 6);
+                digits.split('').forEach((digit, i) => {
+                    if (inputs[i]) inputs[i].value = digit;
+                });
+                if (digits.length === 6) {
+                    inputs[5].focus();
+                }
+            });
+        });
+
+        // Wallet connection
         async function connectWallet() {
             if (typeof window.ethereum === 'undefined') {
                 showToast('Please install MetaMask to connect your wallet', 'error');
@@ -141,7 +417,6 @@
                 showToast(`Connected: ${address.slice(0, 6)}...${address.slice(-4)}`, 'success');
 
                 // TODO: Implement wallet-based authentication
-                // For now, just show the connected address
 
             } catch (error) {
                 showToast('Failed to connect wallet', 'error');
