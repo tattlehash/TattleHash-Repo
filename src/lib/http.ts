@@ -19,11 +19,14 @@ const ALLOWED_ORIGINS = [
   'https://tattlehash-web.pages.dev',
 ];
 
-// Also allow *.tattlehash-web.pages.dev preview deployments
+// Also allow *.tattlehash-web.pages.dev preview deployments and localhost for development
 function isAllowedOrigin(origin: string): boolean {
   if (ALLOWED_ORIGINS.includes(origin)) return true;
   // Allow Cloudflare Pages preview deployments
   if (/^https:\/\/[a-f0-9]+\.tattlehash-web\.pages\.dev$/.test(origin)) return true;
+  // Allow localhost for local development
+  if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) return true;
   return false;
 }
 

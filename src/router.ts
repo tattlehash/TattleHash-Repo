@@ -149,6 +149,12 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     return postLinkWallet(req, env);
   }
 
+  // Unlink wallet from account
+  if (req.method === "DELETE" && pathname === "/auth/unlink-wallet") {
+    const { deleteUnlinkWallet } = await import("./handlers/account");
+    return deleteUnlinkWallet(req, env);
+  }
+
   // Logout
   if (req.method === "POST" && pathname === "/auth/logout") {
     const { postLogout } = await import("./handlers/account");
@@ -161,6 +167,12 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
 
   // Attest
   if (req.method === "POST" && pathname === "/attest") return postAttest(req, env);
+
+  // List user's attestations
+  if (req.method === "GET" && pathname === "/attestations") {
+    const { getAttestations } = await import("./handlers/attest");
+    return getAttestations(req, env);
+  }
 
   // Receipts
   const m = pathname.match(/^\/receipt\/(?<id>[a-zA-Z0-9-]+)$/);

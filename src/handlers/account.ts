@@ -960,6 +960,92 @@ export async function postLinkWallet(req: Request, env: Env): Promise<Response> 
 }
 
 /**
+ * DELETE /auth/unlink-wallet
+ * Unlink a wallet from account
+ */
+export async function deleteUnlinkWallet(req: Request, env: Env): Promise<Response> {
+    const authResult = await authenticateRequest(req, env);
+    if (!authResult.ok) {
+        return err(authResult.error.status, authResult.error.code as any, authResult.error.details);
+    }
+
+    const { userId } = authResult.context;
+
+    const body = await req.json() as Record<string, unknown>;
+    const walletAddress = (body.wallet_address as string)?.toLowerCase();
+
+    if (!walletAddress) {
+        return err(400, 'VALIDATION_ERROR', { message: 'wallet_address is required' });
+    }
+
+    // Check if wallet belongs to this user
+    const wallet = await queryOne<{ id: string; is_primary: number }>(
+        env.TATTLEHASH_DB,
+        'SELECT id, is_primary FROM linked_wallets WHERE user_id = ? AND wallet_address = ?',
+        [userId, walletAddress]
+    );
+
+    if (!wallet) {
+        return err(404, 'NOT_FOUND', { message: 'Wallet not found' });
+    }
+
+    // Don't allow unlinking if it's the only wallet and user has no email auth
+    const user = await queryOne<{ email: string | null; auth_method: string }>(
+        env.TATTLEHASH_DB,
+        'SELECT email, auth_method FROM users WHERE id = ?',
+        [userId]
+    );
+
+    if (user?.auth_method === 'wallet') {
+        // Count wallets
+        const walletCount = await queryOne<{ count: number }>(
+            env.TATTLEHASH_DB,
+            'SELECT COUNT(*) as count FROM linked_wallets WHERE user_id = ?',
+            [userId]
+        );
+
+        if (walletCount && walletCount.count <= 1) {
+            return err(400, 'CANNOT_UNLINK', {
+                message: 'Cannot unlink your only wallet. Add email/password authentication first.',
+            });
+        }
+    }
+
+    // Delete the wallet
+    await execute(
+        env.TATTLEHASH_DB,
+        'DELETE FROM linked_wallets WHERE id = ?',
+        [wallet.id]
+    );
+
+    // If it was primary, set another wallet as primary
+    if (wallet.is_primary) {
+        const anotherWallet = await queryOne<{ id: string }>(
+            env.TATTLEHASH_DB,
+            'SELECT id FROM linked_wallets WHERE user_id = ? LIMIT 1',
+            [userId]
+        );
+
+        if (anotherWallet) {
+            await execute(
+                env.TATTLEHASH_DB,
+                'UPDATE linked_wallets SET is_primary = 1 WHERE id = ?',
+                [anotherWallet.id]
+            );
+        } else {
+            // No wallets left, clear from user record
+            await execute(
+                env.TATTLEHASH_DB,
+                `UPDATE users SET wallet_address = NULL, auth_method = 'email', updated_at = ? WHERE id = ?`,
+                [Date.now(), userId]
+            );
+        }
+    }
+
+    return ok({ message: 'Wallet unlinked successfully' });
+}
+
+/**
  * POST /auth/logout
  * Invalidate current session
  */

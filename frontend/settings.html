@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - TattleHash</title>
+    <meta name="description" content="Manage your TattleHash account settings and connected wallets.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/png" href="assets/tattlehash-head-1.png">
+    <style>
+        .settings-section {
+            margin-bottom: 32px;
+        }
+        .settings-section h2 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        .settings-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .profile-field {
+            margin-bottom: 16px;
+        }
+        .profile-field:last-child {
+            margin-bottom: 0;
+        }
+        .profile-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .profile-value {
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .profile-value-row {
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .profile-edit-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .wallet-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .wallet-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .wallet-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .wallet-details {
+            display: flex;
+            flex-direction: column;
+        }
+        .wallet-address {
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        .wallet-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 12px;
+        }
+        .wallet-badge {
+            background: var(--primary);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .wallet-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .empty-wallets {
+            text-align: center;
+            padding: 32px;
+            color: var(--text-muted);
+        }
+        .empty-wallets-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .connect-wallet-btn {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-disconnect {
+            background: transparent;
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-disconnect:hover {
+            background: var(--error);
+            color: white;
+        }
+        @media (max-width: 640px) {
+            .wallet-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .wallet-actions {
+                width: 100%;
+            }
+            .wallet-actions .btn {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">&#128737;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="create.html">New Attestation</a></li>
+                <li><a href="credits.html">Credits</a></li>
+                <li><a href="settings.html" class="active">Settings</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+
+            <div class="nav-toggle" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="dashboard">
+        <div class="container" style="max-width: 800px;">
+            <!-- Header -->
+            <div class="dashboard-header animate-fade-in">
+                <h1 class="dashboard-title">Account Settings</h1>
+                <p class="dashboard-subtitle">Manage your profile and connected wallets</p>
+            </div>
+
+            <!-- Profile Section -->
+            <div class="settings-section animate-fade-in">
+                <h2>Profile</h2>
+                <div class="settings-card">
+                    <div class="profile-field">
+                        <div class="profile-label">Email</div>
+                        <div class="profile-value-row">
+                            <span id="profile-email">--</span>
+                            <span class="text-muted" style="font-size: 0.8rem; margin-left: 8px;">(cannot be changed)</span>
+                        </div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-label">Display Name</div>
+                        <div class="profile-value-row" id="name-display">
+                            <span id="profile-name">--</span>
+                            <button class="btn btn-ghost btn-sm" onclick="editDisplayName()" style="margin-left: 12px;">Edit</button>
+                        </div>
+                        <div class="profile-edit-row hidden" id="name-edit">
+                            <input type="text" id="name-input" class="form-input" style="flex: 1; max-width: 300px;" placeholder="Enter display name">
+                            <button class="btn btn-primary btn-sm" onclick="saveDisplayName()" style="margin-left: 8px;">Save</button>
+                            <button class="btn btn-ghost btn-sm" onclick="cancelEditName()" style="margin-left: 4px;">Cancel</button>
+                        </div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-label">Member Since</div>
+                        <div class="profile-value" id="profile-since">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connected Wallets Section -->
+            <div class="settings-section animate-fade-in">
+                <h2>Connected Wallets</h2>
+                <div class="settings-card">
+                    <div id="wallet-list" class="wallet-list">
+                        <!-- Loading state -->
+                        <div class="skeleton" style="height: 72px; border-radius: 8px;"></div>
+                    </div>
+
+                    <!-- Empty State (hidden by default) -->
+                    <div id="empty-wallets" class="empty-wallets hidden">
+                        <div class="empty-wallets-icon">&#128279;</div>
+                        <p>No wallets connected</p>
+                        <p style="font-size: 0.875rem; margin-top: 8px;">
+                            Connect a wallet to use blockchain features like Gatekeeper verification
+                        </p>
+                    </div>
+
+                    <button class="btn btn-primary connect-wallet-btn" onclick="connectWallet()">
+                        <span>&#129418;</span> Connect Wallet
+                    </button>
+                </div>
+            </div>
+
+            <!-- Back Link -->
+            <div class="text-center mt-lg">
+                <a href="dashboard.html" class="text-muted">&#8592; Back to Dashboard</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let userData = null;
+
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Set user email in nav
+            document.getElementById('user-email').textContent = user.email || '';
+
+            // Load full profile data
+            await loadProfile();
+        });
+
+        async function loadProfile() {
+            try {
+                const data = await fetchWithAuth('/auth/me');
+                userData = data;
+
+                // Update profile section
+                document.getElementById('profile-email').textContent = data.email || '--';
+                document.getElementById('profile-name').textContent = data.display_name || data.email?.split('@')[0] || '--';
+                document.getElementById('profile-since').textContent = data.created_at
+                    ? new Date(data.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    })
+                    : '--';
+
+                // Render wallets
+                renderWallets(data.linked_wallets || []);
+
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+                showToast('Failed to load profile data', 'error');
+            }
+        }
+
+        function renderWallets(wallets) {
+            const container = document.getElementById('wallet-list');
+            const emptyState = document.getElementById('empty-wallets');
+
+            if (!wallets || wallets.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            container.innerHTML = wallets.map(wallet => `
+                <div class="wallet-item">
+                    <div class="wallet-info">
+                        <div class="wallet-icon">&#129418;</div>
+                        <div class="wallet-details">
+                            <div class="wallet-address">
+                                ${truncateAddress(wallet.wallet_address)}
+                            </div>
+                            <div class="wallet-meta">
+                                <span>Connected ${formatRelativeTime(wallet.linked_at)}</span>
+                                ${wallet.is_primary ? '<span class="wallet-badge">PRIMARY</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wallet-actions">
+                        <button class="btn btn-disconnect btn-sm" onclick="disconnectWallet('${wallet.wallet_address}')">
+                            Disconnect
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function truncateAddress(address) {
+            if (!address) return '';
+            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        }
+
+        function formatRelativeTime(isoDate) {
+            const date = new Date(isoDate);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return 'today';
+            if (diffDays === 1) return 'yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showToast('Please install MetaMask to connect your wallet', 'error');
+                return;
+            }
+
+            try {
+                // Request account access
+                const accounts = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                const address = accounts[0];
+                showToast(`Connected: ${truncateAddress(address)}`, 'info');
+
+                // Create message to sign
+                const timestamp = Date.now();
+                const message = `TattleHash Wallet Link\n\nI authorize linking this wallet to my TattleHash account.\n\nAddress: ${address}\nTimestamp: ${timestamp}`;
+
+                // Request signature
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, address]
+                });
+
+                // Send to backend
+                const response = await fetchWithAuth('/auth/link-wallet', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        wallet_address: address,
+                        signature: signature,
+                        message: message
+                    })
+                });
+
+                showToast('Wallet connected successfully!', 'success');
+
+                // Reload profile to show new wallet
+                await loadProfile();
+
+            } catch (error) {
+                console.error('Wallet connection failed:', error);
+
+                if (error.code === 4001) {
+                    showToast('Wallet connection cancelled', 'error');
+                } else if (error.message?.includes('WALLET_ALREADY_LINKED')) {
+                    showToast('This wallet is already linked to another account', 'error');
+                } else {
+                    showToast(error.message || 'Failed to connect wallet', 'error');
+                }
+            }
+        }
+
+        async function disconnectWallet(address) {
+            if (!confirm(`Are you sure you want to disconnect ${truncateAddress(address)}?`)) {
+                return;
+            }
+
+            try {
+                await fetchWithAuth(`/auth/unlink-wallet`, {
+                    method: 'DELETE',
+                    body: JSON.stringify({ wallet_address: address })
+                });
+
+                showToast('Wallet disconnected', 'success');
+                await loadProfile();
+
+            } catch (error) {
+                console.error('Failed to disconnect wallet:', error);
+                showToast(error.message || 'Failed to disconnect wallet', 'error');
+            }
+        }
+
+        // Display Name Edit Functions
+        function editDisplayName() {
+            const currentName = document.getElementById('profile-name').textContent;
+            document.getElementById('name-input').value = currentName === '--' ? '' : currentName;
+            document.getElementById('name-display').classList.add('hidden');
+            document.getElementById('name-edit').classList.remove('hidden');
+            document.getElementById('name-input').focus();
+        }
+
+        function cancelEditName() {
+            document.getElementById('name-display').classList.remove('hidden');
+            document.getElementById('name-edit').classList.add('hidden');
+        }
+
+        async function saveDisplayName() {
+            const newName = document.getElementById('name-input').value.trim();
+
+            if (!newName) {
+                showToast('Display name cannot be empty', 'error');
+                return;
+            }
+
+            try {
+                await fetchWithAuth('/auth/profile', {
+                    method: 'PATCH',
+                    body: JSON.stringify({ display_name: newName })
+                });
+
+                document.getElementById('profile-name').textContent = newName;
+                cancelEditName();
+                showToast('Display name updated', 'success');
+
+                // Update local storage
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                user.display_name = newName;
+                localStorage.setItem('user', JSON.stringify(user));
+
+            } catch (error) {
+                console.error('Failed to update display name:', error);
+                showToast(error.message || 'Failed to update display name', 'error');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        function toggleMobileNav() {
+            document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+    </script>
+</body>
+</html>

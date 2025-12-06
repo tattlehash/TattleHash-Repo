@@ -109,3 +109,19 @@ export async function getAuthContext(
     }
     return result.context;
 }
+
+/**
+ * Try to authenticate request without requiring it.
+ * Returns user context if authenticated, null if not.
+ * Use for endpoints that work for both authenticated and anonymous users.
+ */
+export async function tryAuthenticate(
+    request: Request,
+    env: Env
+): Promise<UserContext | null> {
+    const result = await authenticateRequest(request, env);
+    if (!result.ok) {
+        return null;
+    }
+    return result.context;
+}

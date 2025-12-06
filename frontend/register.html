@@ -121,12 +121,6 @@
                 </button>
             </form>
 
-            <div class="auth-divider">or</div>
-
-            <button type="button" class="btn btn-secondary btn-block" onclick="connectWallet()">
-                <span>🦊</span> Connect Wallet
-            </button>
-
             <div class="auth-footer">
                 Already have an account? <a href="login.html">Sign in</a>
                 <br>
@@ -215,27 +209,6 @@
                 errorDiv.classList.remove('hidden');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Create Account';
-            }
-        }
-
-        async function connectWallet() {
-            if (typeof window.ethereum === 'undefined') {
-                showToast('Please install MetaMask to connect your wallet', 'error');
-                return;
-            }
-
-            try {
-                const accounts = await window.ethereum.request({
-                    method: 'eth_requestAccounts'
-                });
-
-                const address = accounts[0];
-                showToast(`Connected: ${address.slice(0, 6)}...${address.slice(-4)}`, 'success');
-
-                // TODO: Implement wallet-based authentication
-
-            } catch (error) {
-                showToast('Failed to connect wallet', 'error');
             }
         }
 
