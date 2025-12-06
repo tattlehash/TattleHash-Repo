@@ -84,6 +84,49 @@
 
             <!-- Form -->
             <form id="create-form" class="create-form animate-fade-in" onsubmit="handleCreateAttestation(event)">
+                <!-- Evidence Upload Section -->
+                <div id="evidence-section" class="form-section">
+                    <h3 class="form-section-title">Evidence Document</h3>
+                    <p class="form-hint mb-md">Upload a file to create an immutable proof. Your file is hashed locally and never uploaded to our servers.</p>
+
+                    <div id="file-drop-zone" class="file-drop-zone">
+                        <input type="file" id="file-input" style="display: none;" onchange="handleFileSelect(event)">
+                        <div class="drop-zone-content" id="drop-zone-content">
+                            <div class="drop-zone-icon">📄</div>
+                            <div class="drop-zone-text">
+                                <strong>Drag & drop your file here</strong>
+                                <span>or <a href="#" onclick="document.getElementById('file-input').click(); return false;">browse</a></span>
+                            </div>
+                            <div class="drop-zone-hint">Max 10MB • Any file type • Never leaves your device</div>
+                        </div>
+                        <div class="file-selected hidden" id="file-selected">
+                            <div class="file-info">
+                                <span class="file-icon">📎</span>
+                                <div class="file-details">
+                                    <span class="file-name" id="selected-file-name">filename.pdf</span>
+                                    <span class="file-size" id="selected-file-size">2.4 MB</span>
+                                </div>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="clearFile()">✕</button>
+                            </div>
+                            <div class="hash-display" id="hash-display">
+                                <span class="hash-label">SHA-256 Hash:</span>
+                                <code class="hash-value" id="file-hash">Computing...</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hashing Progress -->
+                    <div id="hash-progress" class="hash-progress hidden">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="hash-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text" id="hash-progress-text">Hashing file...</span>
+                    </div>
+
+                    <!-- Hash Error -->
+                    <div id="hash-error" class="form-hint form-error hidden mt-sm"></div>
+                </div>
+
                 <!-- Counterparty Section (for Gatekeeper/Enforced) -->
                 <div id="counterparty-section" class="form-section hidden">
                     <h3 class="form-section-title">Counterparty Details</h3>
@@ -338,6 +381,159 @@
             padding: 12px;
             border-radius: 12px;
         }
+
+        /* File Drop Zone Styles */
+        .file-drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.2s ease;
+            background: var(--bg-secondary);
+            cursor: pointer;
+        }
+
+        .file-drop-zone:hover,
+        .file-drop-zone.drag-over {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .file-drop-zone.drag-over {
+            transform: scale(1.01);
+        }
+
+        .file-drop-zone.has-file {
+            border-style: solid;
+            border-color: var(--accent-cyan);
+            cursor: default;
+        }
+
+        .drop-zone-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .drop-zone-icon {
+            font-size: 48px;
+            opacity: 0.6;
+        }
+
+        .drop-zone-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: var(--text-secondary);
+        }
+
+        .drop-zone-text strong {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .drop-zone-text a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+
+        .drop-zone-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .file-selected {
+            text-align: left;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+        }
+
+        .file-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .file-name {
+            color: var(--text-primary);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .file-size {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .hash-display {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .hash-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hash-value {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            word-break: break-all;
+            background: transparent;
+            padding: 0;
+        }
+
+        .hash-progress {
+            margin-top: 12px;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 2px;
+            transition: width 0.1s ease;
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .file-drop-zone.error {
+            border-color: var(--accent-red);
+            background: rgba(255, 76, 76, 0.05);
+        }
     </style>
 
     <script src="js/app.js"></script>
@@ -345,6 +541,16 @@
         let selectedMode = null;
         let selectedFeeArrangement = 'creator_pays';
         let selectedCoinCall = null;
+        let selectedFile = null;
+        let computedHash = null;
+
+        // Size limits per mode (in bytes)
+        const SIZE_LIMITS = {
+            SOLO: 10 * 1024 * 1024,      // 10MB
+            FIRE: 10 * 1024 * 1024,      // 10MB
+            GATEKEEPER: 25 * 1024 * 1024, // 25MB
+            ENFORCED: 50 * 1024 * 1024,   // 50MB
+        };
 
         const PRICES = {
             SOLO: { price: '$4.99', credits: 1, cents: 499 },
@@ -371,7 +577,182 @@
             if (mode && PRICES[mode]) {
                 selectMode(mode);
             }
+
+            // Setup drag-drop handlers
+            setupFileDropZone();
         });
+
+        // ============ FILE HANDLING ============
+
+        function setupFileDropZone() {
+            const dropZone = document.getElementById('file-drop-zone');
+
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Highlight drop zone when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                }, false);
+            });
+
+            // Handle dropped files
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            // Handle click to open file picker
+            dropZone.addEventListener('click', (e) => {
+                if (!dropZone.classList.contains('has-file')) {
+                    document.getElementById('file-input').click();
+                }
+            });
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        async function processFile(file) {
+            const dropZone = document.getElementById('file-drop-zone');
+            const hashError = document.getElementById('hash-error');
+
+            // Reset error state
+            hashError.classList.add('hidden');
+            dropZone.classList.remove('error');
+
+            // Size validation
+            const maxSize = SIZE_LIMITS[selectedMode] || SIZE_LIMITS.SOLO;
+            if (file.size > maxSize) {
+                const maxMB = Math.round(maxSize / (1024 * 1024));
+                showFileError(`File too large. Maximum size is ${maxMB}MB for ${selectedMode || 'Solo'} mode.`);
+                return;
+            }
+
+            // Store file reference
+            selectedFile = file;
+
+            // Update UI to show file info
+            document.getElementById('drop-zone-content').classList.add('hidden');
+            document.getElementById('file-selected').classList.remove('hidden');
+            document.getElementById('selected-file-name').textContent = file.name;
+            document.getElementById('selected-file-size').textContent = formatFileSize(file.size);
+            dropZone.classList.add('has-file');
+
+            // Show progress
+            document.getElementById('hash-progress').classList.remove('hidden');
+            document.getElementById('file-hash').textContent = 'Computing...';
+
+            // Compute hash
+            try {
+                computedHash = await computeSHA256(file);
+                document.getElementById('file-hash').textContent = computedHash;
+                document.getElementById('hash-progress').classList.add('hidden');
+                updateSubmitButton();
+            } catch (error) {
+                showFileError('Failed to compute file hash: ' + error.message);
+                clearFile();
+            }
+        }
+
+        async function computeSHA256(file) {
+            const progressFill = document.getElementById('hash-progress-fill');
+            const progressText = document.getElementById('hash-progress-text');
+
+            // For smaller files, use simple approach
+            if (file.size < 50 * 1024 * 1024) { // < 50MB
+                progressText.textContent = 'Computing SHA-256 hash...';
+                progressFill.style.width = '50%';
+
+                const arrayBuffer = await file.arrayBuffer();
+                progressFill.style.width = '75%';
+
+                const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+                progressFill.style.width = '100%';
+
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                return hashHex;
+            }
+
+            // For larger files, use streaming approach with chunks
+            const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+            const chunks = Math.ceil(file.size / CHUNK_SIZE);
+            let processedChunks = 0;
+
+            // Use a streaming hash (simulated with multiple updates isn't directly available in WebCrypto)
+            // So for now, we still read the whole file but update progress
+            progressText.textContent = 'Reading file...';
+            progressFill.style.width = '25%';
+
+            const arrayBuffer = await file.arrayBuffer();
+            progressText.textContent = 'Computing SHA-256 hash...';
+            progressFill.style.width = '75%';
+
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            progressFill.style.width = '100%';
+
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function clearFile() {
+            selectedFile = null;
+            computedHash = null;
+
+            const dropZone = document.getElementById('file-drop-zone');
+            document.getElementById('drop-zone-content').classList.remove('hidden');
+            document.getElementById('file-selected').classList.add('hidden');
+            document.getElementById('hash-progress').classList.add('hidden');
+            dropZone.classList.remove('has-file', 'error');
+            document.getElementById('file-input').value = '';
+            document.getElementById('hash-error').classList.add('hidden');
+
+            updateSubmitButton();
+        }
+
+        function showFileError(message) {
+            const dropZone = document.getElementById('file-drop-zone');
+            const hashError = document.getElementById('hash-error');
+
+            hashError.textContent = message;
+            hashError.classList.remove('hidden');
+            dropZone.classList.add('error');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // ============ END FILE HANDLING ============
 
         function selectMode(mode) {
             selectedMode = mode;
@@ -459,6 +840,13 @@
                 return;
             }
 
+            // Require file with computed hash
+            if (!computedHash) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Upload a File to Continue';
+                return;
+            }
+
             // For coin toss, require a call to be selected
             if (selectedFeeArrangement === 'coin_toss' && !selectedCoinCall) {
                 submitBtn.disabled = true;
@@ -528,6 +916,9 @@
             const data = {
                 mode: selectedMode,
                 description: form.description.value,
+                content_hash: computedHash,  // SHA-256 hash of uploaded file
+                file_name: selectedFile?.name || null,
+                file_size: selectedFile?.size || null,
             };
 
             if (form.amount.value) {

@@ -5,7 +5,7 @@ import { getReceipt } from "./handlers/receipt";
 import { err, ok } from "./lib/http";
 import { runAllTests, isAuthorized } from "./tests/harness";
 import { requireAdmin } from "./middleware/admin";
-import { checkRateLimit } from "./middleware/ratelimit";
+import { checkRateLimit, checkVerificationRateLimit } from "./middleware/ratelimit";
 import { addSecurityHeaders } from "./middleware/security-headers";
 import { validateCsrf } from "./middleware/csrf";
 import { getStatus, getMetrics } from "./handlers/admin/health";
@@ -331,6 +331,227 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
     return postCheckTimeout(req, env, enforcedTimeoutMatch.groups.id);
   }
 
+  // ============================================================================
+  // Enforced Sessions - Document Review with R2 Storage
+  // ============================================================================
+
+  // Create new session
+  if (req.method === "POST" && pathname === "/enforced/sessions") {
+    const { postCreateSession } = await import("./handlers/enforced-sessions");
+    return postCreateSession(req, env);
+  }
+
+  // List user's sessions
+  if (req.method === "GET" && pathname === "/enforced/sessions") {
+    const { getListSessions } = await import("./handlers/enforced-sessions");
+    return getListSessions(req, env);
+  }
+
+  // Get session details
+  const enforcedSessionMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)$/);
+  if (req.method === "GET" && enforcedSessionMatch?.groups?.id) {
+    const { getSession } = await import("./handlers/enforced-sessions");
+    return getSession(req, env, enforcedSessionMatch.groups.id);
+  }
+
+  // Verify participant (email code)
+  const enforcedVerifyMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/verify$/);
+  if (req.method === "POST" && enforcedVerifyMatch?.groups?.id) {
+    const { postVerifyParticipant } = await import("./handlers/enforced-sessions");
+    return postVerifyParticipant(req, env, enforcedVerifyMatch.groups.id);
+  }
+
+  // Join session after verification
+  const enforcedJoinMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/join$/);
+  if (req.method === "POST" && enforcedJoinMatch?.groups?.id) {
+    const { postJoinSession } = await import("./handlers/enforced-sessions");
+    return postJoinSession(req, env, enforcedJoinMatch.groups.id);
+  }
+
+  // Resend verification code
+  const enforcedResendMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/resend-code$/);
+  if (req.method === "POST" && enforcedResendMatch?.groups?.id) {
+    const { postResendCode } = await import("./handlers/enforced-sessions");
+    return postResendCode(req, env, enforcedResendMatch.groups.id);
+  }
+
+  // Upload document
+  const enforcedDocsUploadMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/documents$/);
+  if (req.method === "POST" && enforcedDocsUploadMatch?.groups?.id) {
+    const { postUploadDocument } = await import("./handlers/enforced-sessions");
+    return postUploadDocument(req, env, enforcedDocsUploadMatch.groups.id);
+  }
+
+  // List documents
+  if (req.method === "GET" && enforcedDocsUploadMatch?.groups?.id) {
+    const { getListDocuments } = await import("./handlers/enforced-sessions");
+    return getListDocuments(req, env, enforcedDocsUploadMatch.groups.id);
+  }
+
+  // Get document download URL
+  const enforcedDocUrlMatch = pathname.match(/^\/enforced\/sessions\/(?<sessionId>[a-zA-Z0-9-]+)\/documents\/(?<docId>[a-zA-Z0-9-]+)\/url$/);
+  if (req.method === "GET" && enforcedDocUrlMatch?.groups?.sessionId && enforcedDocUrlMatch?.groups?.docId) {
+    const { getDocumentDownloadUrl } = await import("./handlers/enforced-sessions");
+    return getDocumentDownloadUrl(req, env, enforcedDocUrlMatch.groups.sessionId, enforcedDocUrlMatch.groups.docId);
+  }
+
+  // Download document (with token)
+  const enforcedDocDownloadMatch = pathname.match(/^\/enforced\/sessions\/(?<sessionId>[a-zA-Z0-9-]+)\/documents\/(?<docId>[a-zA-Z0-9-]+)\/download$/);
+  if (req.method === "GET" && enforcedDocDownloadMatch?.groups?.sessionId && enforcedDocDownloadMatch?.groups?.docId) {
+    const { getDownloadDocument } = await import("./handlers/enforced-sessions");
+    return getDownloadDocument(req, env, enforcedDocDownloadMatch.groups.sessionId, enforcedDocDownloadMatch.groups.docId);
+  }
+
+  // Delete document
+  const enforcedDocDeleteMatch = pathname.match(/^\/enforced\/sessions\/(?<sessionId>[a-zA-Z0-9-]+)\/documents\/(?<docId>[a-zA-Z0-9-]+)$/);
+  if (req.method === "DELETE" && enforcedDocDeleteMatch?.groups?.sessionId && enforcedDocDeleteMatch?.groups?.docId) {
+    const { deleteDocumentHandler } = await import("./handlers/enforced-sessions");
+    return deleteDocumentHandler(req, env, enforcedDocDeleteMatch.groups.sessionId, enforcedDocDeleteMatch.groups.docId);
+  }
+
+  // Submit agreement
+  const enforcedAgreeMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/agree$/);
+  if (req.method === "POST" && enforcedAgreeMatch?.groups?.id) {
+    const { postAgree } = await import("./handlers/enforced-sessions");
+    return postAgree(req, env, enforcedAgreeMatch.groups.id);
+  }
+
+  // Submit decline
+  const enforcedDeclineMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/decline$/);
+  if (req.method === "POST" && enforcedDeclineMatch?.groups?.id) {
+    const { postDecline } = await import("./handlers/enforced-sessions");
+    return postDecline(req, env, enforcedDeclineMatch.groups.id);
+  }
+
+  // Get agreement status
+  const enforcedAgreementStatusMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/status$/);
+  if (req.method === "GET" && enforcedAgreementStatusMatch?.groups?.id) {
+    const { getAgreementStatusHandler } = await import("./handlers/enforced-sessions");
+    return getAgreementStatusHandler(req, env, enforcedAgreementStatusMatch.groups.id);
+  }
+
+  // Request park
+  const enforcedParkMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/park$/);
+  if (req.method === "POST" && enforcedParkMatch?.groups?.id) {
+    const { postPark } = await import("./handlers/enforced-sessions");
+    return postPark(req, env, enforcedParkMatch.groups.id);
+  }
+
+  // Resume from park
+  const enforcedResumeMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/resume$/);
+  if (req.method === "POST" && enforcedResumeMatch?.groups?.id) {
+    const { postResume } = await import("./handlers/enforced-sessions");
+    return postResume(req, env, enforcedResumeMatch.groups.id);
+  }
+
+  // Get session events (audit trail)
+  const enforcedEventsMatch = pathname.match(/^\/enforced\/sessions\/(?<id>[a-zA-Z0-9-]+)\/events$/);
+  if (req.method === "GET" && enforcedEventsMatch?.groups?.id) {
+    const { getEvents } = await import("./handlers/enforced-sessions");
+    return getEvents(req, env, enforcedEventsMatch.groups.id);
+  }
+
+  // ============================================================================
+  // Gatekeeper Mutual Verification
+  // ============================================================================
+
+  // List profiles
+  if (req.method === "GET" && pathname === "/gatekeeper/profiles") {
+    const { getProfilesHandler } = await import("./handlers/gatekeeper-mutual");
+    return getProfilesHandler(req, env);
+  }
+
+  // List check types
+  if (req.method === "GET" && pathname === "/gatekeeper/check-types") {
+    const { getCheckTypesHandler } = await import("./handlers/gatekeeper-mutual");
+    return getCheckTypesHandler(req, env);
+  }
+
+  // Get user verification status
+  if (req.method === "GET" && pathname === "/gatekeeper/verification") {
+    const { getVerificationHandler } = await import("./handlers/gatekeeper-mutual");
+    return getVerificationHandler(req, env);
+  }
+
+  // Start verification
+  if (req.method === "POST" && pathname === "/gatekeeper/verification") {
+    const { postStartVerificationHandler } = await import("./handlers/gatekeeper-mutual");
+    return postStartVerificationHandler(req, env);
+  }
+
+  // Submit wallet signature for verification
+  if (req.method === "POST" && pathname === "/gatekeeper/verification/wallet") {
+    const { postWalletSignatureHandler } = await import("./handlers/gatekeeper-mutual");
+    return postWalletSignatureHandler(req, env);
+  }
+
+  // Poll verification status
+  if (req.method === "GET" && pathname === "/gatekeeper/verification/status") {
+    const { getVerificationStatusHandler } = await import("./handlers/gatekeeper-mutual");
+    return getVerificationStatusHandler(req, env);
+  }
+
+  // Create gatekeeper session
+  if (req.method === "POST" && pathname === "/gatekeeper/sessions") {
+    const { postCreateSessionHandler } = await import("./handlers/gatekeeper-mutual");
+    return postCreateSessionHandler(req, env);
+  }
+
+  // List user's sessions
+  if (req.method === "GET" && pathname === "/gatekeeper/sessions") {
+    const { getSessionsHandler } = await import("./handlers/gatekeeper-mutual");
+    return getSessionsHandler(req, env);
+  }
+
+  // Get session details
+  const gkSessionMatch = pathname.match(/^\/gatekeeper\/sessions\/(?<id>[a-zA-Z0-9_-]+)$/);
+  if (req.method === "GET" && gkSessionMatch?.groups?.id) {
+    const { getSessionHandler } = await import("./handlers/gatekeeper-mutual");
+    return getSessionHandler(req, env, gkSessionMatch.groups.id);
+  }
+
+  // Get session info (public for counterparty)
+  const gkSessionInfoMatch = pathname.match(/^\/gatekeeper\/sessions\/(?<id>[a-zA-Z0-9_-]+)\/info$/);
+  if (req.method === "GET" && gkSessionInfoMatch?.groups?.id) {
+    const { getSessionInfoHandler } = await import("./handlers/gatekeeper-mutual");
+    return getSessionInfoHandler(req, env, gkSessionInfoMatch.groups.id);
+  }
+
+  // Verify counterparty code
+  const gkVerifyCodeMatch = pathname.match(/^\/gatekeeper\/sessions\/(?<id>[a-zA-Z0-9_-]+)\/verify-code$/);
+  if (req.method === "POST" && gkVerifyCodeMatch?.groups?.id) {
+    const { postVerifyCodeHandler } = await import("./handlers/gatekeeper-mutual");
+    return postVerifyCodeHandler(req, env, gkVerifyCodeMatch.groups.id);
+  }
+
+  // Verify counterparty wallet
+  const gkVerifyWalletMatch = pathname.match(/^\/gatekeeper\/sessions\/(?<id>[a-zA-Z0-9_-]+)\/verify-wallet$/);
+  if (req.method === "POST" && gkVerifyWalletMatch?.groups?.id) {
+    const { postVerifyWalletHandler } = await import("./handlers/gatekeeper-mutual");
+    return postVerifyWalletHandler(req, env, gkVerifyWalletMatch.groups.id);
+  }
+
+  // Proceed with session
+  const gkProceedMatch = pathname.match(/^\/gatekeeper\/sessions\/(?<id>[a-zA-Z0-9_-]+)\/proceed$/);
+  if (req.method === "POST" && gkProceedMatch?.groups?.id) {
+    const { postProceedHandler } = await import("./handlers/gatekeeper-mutual");
+    return postProceedHandler(req, env, gkProceedMatch.groups.id);
+  }
+
+  // Abort session
+  const gkAbortMatch = pathname.match(/^\/gatekeeper\/sessions\/(?<id>[a-zA-Z0-9_-]+)\/abort$/);
+  if (req.method === "POST" && gkAbortMatch?.groups?.id) {
+    const { postAbortHandler } = await import("./handlers/gatekeeper-mutual");
+    return postAbortHandler(req, env, gkAbortMatch.groups.id);
+  }
+
+  // Resend verification code
+  const gkResendMatch = pathname.match(/^\/gatekeeper\/sessions\/(?<id>[a-zA-Z0-9_-]+)\/resend$/);
+  if (req.method === "POST" && gkResendMatch?.groups?.id) {
+    const { postResendCodeHandler } = await import("./handlers/gatekeeper-mutual");
+    return postResendCodeHandler(req, env, gkResendMatch.groups.id);
+  }
+
   // Webhooks - Subscription management
   if (req.method === "GET" && pathname === "/webhooks/events") {
     const { getWebhookEvents } = await import("./handlers/webhooks");
@@ -421,6 +642,18 @@ async function routeInternal(req: Request, env: Env): Promise<Response> {
   // ============================================================================
   // Verification Portal
   // ============================================================================
+
+  // Apply verification rate limiting (10/hr per IP, 50/day per attestation ID)
+  // Skip for health and stats endpoints
+  if (pathname.startsWith("/verify") && pathname !== "/verify/health" && pathname !== "/verify/stats") {
+    // Extract attestation ID if present (for per-attestation rate limiting)
+    const targetMatch = pathname.match(/^\/verify\/(?:ENF_BUNDLE|CHALLENGE|ATTESTATION)\/([a-zA-Z0-9-]+)$/i);
+    const coinTossMatch = pathname.match(/^\/verify\/coin-toss\/([a-zA-Z0-9-]+)$/);
+    const attestationId = targetMatch?.[1] || coinTossMatch?.[1];
+
+    const verifyRateLimit = await checkVerificationRateLimit(req, env, attestationId);
+    if (!verifyRateLimit.ok) return verifyRateLimit.response;
+  }
 
   if (req.method === "GET" && pathname === "/verify") {
     const { getVerify } = await import("./handlers/verification");

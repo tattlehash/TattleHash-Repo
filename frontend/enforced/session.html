@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enforced Workspace - TattleHash</title>
+    <meta name="description" content="Review documents and finalize your enforced attestation.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="index.html">Enforced Sessions</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+
+            <div class="nav-toggle" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="workspace-page">
+        <div class="container">
+            <!-- Header -->
+            <div id="workspace-header" class="workspace-header animate-fade-in">
+                <div class="header-top">
+                    <h1 id="session-title" class="session-title">Loading...</h1>
+                    <div id="status-badge" class="status-badge">--</div>
+                </div>
+                <div id="session-meta" class="session-meta"></div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading workspace...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="error-state hidden">
+                <div class="error-icon">&#9888;&#65039;</div>
+                <h2>Unable to Load Session</h2>
+                <p id="error-message"></p>
+                <a href="index.html" class="btn btn-primary">Back to Sessions</a>
+            </div>
+
+            <!-- Workspace Content -->
+            <div id="workspace-content" class="workspace-content hidden">
+                <!-- Participants Section -->
+                <section class="workspace-section">
+                    <h2 class="section-title">Participants</h2>
+                    <div id="participants-list" class="participants-list"></div>
+                </section>
+
+                <!-- Documents Section -->
+                <section class="workspace-section">
+                    <h2 class="section-title">Documents</h2>
+                    <div id="documents-container"></div>
+                    <div id="upload-section" class="upload-section hidden">
+                        <button type="button" class="btn btn-ghost" onclick="document.getElementById('doc-upload-input').click()">
+                            + Add Document
+                        </button>
+                        <input type="file" id="doc-upload-input" multiple style="display: none;" onchange="handleDocumentUpload(event)">
+                    </div>
+                </section>
+
+                <!-- Park Status Section -->
+                <section id="park-section" class="workspace-section hidden">
+                    <h2 class="section-title">Park Status</h2>
+                    <div id="park-status" class="park-status"></div>
+                </section>
+
+                <!-- Info Box -->
+                <div id="info-box" class="info-box hidden">
+                    <div class="info-icon">&#9432;</div>
+                    <p id="info-text"></p>
+                </div>
+
+                <!-- Actions -->
+                <div id="actions-container" class="actions-container hidden"></div>
+            </div>
+
+            <!-- Completion State -->
+            <div id="completion-state" class="completion-state hidden">
+                <div class="completion-header">
+                    <div class="completion-icon">&#9989;</div>
+                    <h2>Attestation Complete</h2>
+                    <p class="text-muted">Both parties reviewed and agreed</p>
+                </div>
+
+                <div class="attestation-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Attestation ID</span>
+                        <span id="attestation-id" class="detail-value mono"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Blockchain</span>
+                        <span class="detail-value">Polygon</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Transaction</span>
+                        <a id="tx-link" href="#" target="_blank" class="detail-value mono"></a>
+                    </div>
+                </div>
+
+                <div class="attested-documents">
+                    <h3>Attested Documents</h3>
+                    <div id="attested-docs-list"></div>
+                </div>
+
+                <div class="completion-actions">
+                    <button class="btn btn-primary" onclick="downloadProofPDF()">Download Proof PDF</button>
+                    <a id="polygonscan-link" href="#" target="_blank" class="btn btn-ghost">View on Polygonscan</a>
+                </div>
+            </div>
+
+            <!-- Void State -->
+            <div id="void-state" class="void-state hidden">
+                <div class="void-header">
+                    <div class="void-icon">&#10060;</div>
+                    <h2 id="void-title">Session Declined</h2>
+                </div>
+                <p id="void-message" class="void-message"></p>
+                <p class="void-note">No attestation was created. Your credits were not charged.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Park Modal -->
+    <div id="park-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Use Your Park</h2>
+            <div class="modal-body">
+                <p>You have <strong>ONE park</strong> available for this session. Once used, you cannot park again.</p>
+                <p class="mt-md">This will pause the session for <strong>72 hours</strong> &mdash; enough time to get a document reviewed or handle a weekend.</p>
+                <p class="mt-md text-muted">The other party cannot block this request.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeParkModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmPark()">Park for 72 Hours</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decline Modal -->
+    <div id="decline-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="modal-title">Decline Session</h2>
+            <div class="modal-body">
+                <p>Are you sure you want to decline this session? This action cannot be undone.</p>
+                <div class="form-group mt-lg">
+                    <label class="form-label">Reason (optional)</label>
+                    <textarea id="decline-reason" class="form-input" rows="3" placeholder="Explain why you're declining..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeDeclineModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDecline()">Decline Session</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Viewer Modal -->
+    <div id="doc-viewer-modal" class="modal-overlay hidden">
+        <div class="modal-content modal-lg">
+            <div class="doc-viewer-header">
+                <h2 id="doc-viewer-title" class="modal-title">Document</h2>
+                <button class="modal-close" onclick="closeDocViewer()">&times;</button>
+            </div>
+            <div class="doc-viewer-meta">
+                <span>Uploaded by: <span id="doc-viewer-uploader"></span></span>
+            </div>
+            <div id="doc-viewer-content" class="doc-viewer-content">
+                <div class="doc-viewer-placeholder">
+                    <p>Loading document...</p>
+                </div>
+            </div>
+            <div class="doc-viewer-footer">
+                <div class="doc-hash">
+                    <span class="hash-label">Hash:</span>
+                    <code id="doc-viewer-hash" class="hash-value"></code>
+                </div>
+                <button class="btn btn-primary" onclick="downloadCurrentDoc()">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .workspace-page {
+            padding: var(--spacing-xl) 0;
+            min-height: 100vh;
+        }
+
+        .workspace-header {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .session-title {
+            font-size: 1.75rem;
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
+        .status-badge.review { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+        .status-badge.parked { background: rgba(128, 128, 128, 0.2); color: #888; }
+        .status-badge.agreed { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .status-badge.void, .status-badge.expired { background: rgba(255, 68, 68, 0.2); color: var(--error); }
+
+        .session-meta {
+            display: flex;
+            gap: var(--spacing-lg);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .loading-state, .error-state {
+            text-align: center;
+            padding: var(--spacing-4xl);
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-icon, .void-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .workspace-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .section-title {
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .participants-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .participant-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+        }
+
+        .participant-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .participant-icon {
+            font-size: 1.5rem;
+        }
+
+        .participant-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .participant-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .participant-status {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: 0.875rem;
+        }
+
+        .participant-status.pending { color: var(--warning); }
+        .participant-status.agreed { color: var(--success); }
+
+        .documents-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .documents-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .documents-group-title {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .documents-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .document-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        .document-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            flex: 1;
+            min-width: 0;
+        }
+
+        .document-icon {
+            font-size: 1.25rem;
+        }
+
+        .document-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .document-size {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .document-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .upload-section {
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .park-status {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .park-status-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+        }
+
+        .park-available { color: var(--success); }
+        .park-used { color: var(--error); }
+
+        .info-box {
+            display: flex;
+            gap: var(--spacing-md);
+            padding: var(--spacing-lg);
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .info-icon {
+            font-size: 1.25rem;
+            color: var(--accent-cyan);
+        }
+
+        .info-box p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .actions-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+            padding: var(--spacing-xl);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: var(--error-dim);
+        }
+
+        .btn-agree {
+            background: var(--success);
+            color: #000;
+        }
+
+        .btn-agree:hover {
+            background: var(--success-dim);
+        }
+
+        /* Completion State */
+        .completion-state, .void-state {
+            text-align: center;
+            padding: var(--spacing-2xl);
+        }
+
+        .completion-header, .void-header {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .completion-icon {
+            font-size: 80px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .attestation-details {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            text-align: left;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--text-muted);
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+        }
+
+        .detail-value.mono {
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .attested-documents {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            text-align: left;
+        }
+
+        .attested-documents h3 {
+            font-size: 1rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .attested-doc-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .attested-doc-name {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .attested-doc-hash {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .completion-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+        }
+
+        .void-message {
+            color: var(--text-secondary);
+            max-width: 400px;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        .void-note {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: var(--spacing-lg);
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .modal-content.modal-lg {
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .modal-body {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-xl);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .doc-viewer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .doc-viewer-meta {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .doc-viewer-content {
+            flex: 1;
+            min-height: 400px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .doc-viewer-content iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+            border: none;
+        }
+
+        .doc-viewer-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+        }
+
+        .doc-viewer-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .doc-hash {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .hash-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .hash-value {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            background: transparent;
+            padding: 0;
+        }
+
+        /* Pending State */
+        .pending-waiting {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+        }
+
+        .pending-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .pending-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-xl);
+        }
+
+        /* Parked Banner */
+        .parked-banner {
+            background: rgba(128, 128, 128, 0.1);
+            border: 1px solid rgba(128, 128, 128, 0.3);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+        }
+
+        .parked-banner h3 {
+            color: #888;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .parked-banner p {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .resume-time {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let sessionId = null;
+        let sessionData = null;
+        let currentUser = null;
+        let isInitiator = false;
+        let currentDocUrl = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '../login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+                return;
+            }
+
+            document.getElementById('user-email').textContent = currentUser.email || '';
+
+            // Get session ID from URL
+            const params = new URLSearchParams(window.location.search);
+            sessionId = params.get('id');
+
+            if (!sessionId) {
+                showError('No session ID provided');
+                return;
+            }
+
+            // Check for pending join
+            const pendingSession = localStorage.getItem('pendingEnforcedSession');
+            if (pendingSession === sessionId) {
+                localStorage.removeItem('pendingEnforcedSession');
+                try {
+                    await fetchWithAuth(`/enforced/sessions/${sessionId}/join`, { method: 'POST' });
+                } catch (e) {
+                    console.log('Join attempt:', e.message);
+                }
+            }
+
+            // Load session
+            await loadSession();
+        });
+
+        async function loadSession() {
+            try {
+                const response = await fetchWithAuth(`/enforced/sessions/${sessionId}`);
+                sessionData = response.session || response;
+
+                isInitiator = sessionData.initiator?.user_id === currentUser.id ||
+                              sessionData.initiator_user_id === currentUser.id;
+
+                document.getElementById('loading-state').classList.add('hidden');
+                renderSession();
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        function renderSession() {
+            // Update header
+            document.getElementById('session-title').textContent = sessionData.title || 'Untitled Session';
+
+            const statusBadge = document.getElementById('status-badge');
+            const status = sessionData.status.toLowerCase();
+            statusBadge.className = `status-badge ${status}`;
+            statusBadge.textContent = getStatusText(sessionData.status);
+
+            // Update meta
+            const meta = [];
+            if (sessionData.expires_at) {
+                meta.push(`Expires: ${formatDate(sessionData.expires_at)}`);
+            }
+            if (sessionData.created_at) {
+                meta.push(`Created: ${formatDate(sessionData.created_at)}`);
+            }
+            document.getElementById('session-meta').textContent = meta.join(' • ');
+
+            // Render based on status
+            switch (sessionData.status) {
+                case 'PENDING':
+                    renderPendingState();
+                    break;
+                case 'REVIEW':
+                    renderReviewState();
+                    break;
+                case 'PARKED':
+                    renderParkedState();
+                    break;
+                case 'AGREED':
+                    renderAgreedState();
+                    break;
+                case 'VOID':
+                    renderVoidState('Session Declined');
+                    break;
+                case 'EXPIRED':
+                    renderVoidState('Session Expired');
+                    break;
+            }
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                PENDING: '&#8987; Pending',
+                REVIEW: '&#128308; Review',
+                PARKED: '&#127359; Parked',
+                AGREED: '&#9989; Agreed',
+                VOID: '&#10060; Void',
+                EXPIRED: '&#10060; Expired'
+            };
+            return texts[status] || status;
+        }
+
+        function renderPendingState() {
+            if (isInitiator) {
+                // Initiator sees waiting screen
+                document.getElementById('workspace-content').innerHTML = `
+                    <div class="pending-waiting">
+                        <div class="pending-icon">&#9993;</div>
+                        <h2>Waiting for Counterparty</h2>
+                        <p class="text-muted">Invitation sent to ${escapeHtml(sessionData.counterparty?.email || 'counterparty')}</p>
+                        <p class="text-muted mt-md">Sent: ${formatDate(sessionData.created_at)}</p>
+                        <p class="text-muted">Expires: ${formatDate(sessionData.expires_at)}</p>
+                        <div class="pending-actions">
+                            <button class="btn btn-ghost" onclick="resendInvitation()">Resend Invitation</button>
+                            <button class="btn btn-danger" onclick="cancelSession()">Cancel Session</button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('workspace-content').classList.remove('hidden');
+            } else {
+                // Counterparty shouldn't see this state normally
+                showError('Please verify your email to access this session');
+            }
+        }
+
+        function renderReviewState() {
+            document.getElementById('workspace-content').classList.remove('hidden');
+            renderParticipants();
+            renderDocuments();
+            renderParkStatus();
+            renderInfoBox();
+            renderActions();
+        }
+
+        function renderParkedState() {
+            document.getElementById('workspace-content').classList.remove('hidden');
+
+            // Add parked banner at top
+            const parkedBy = sessionData.parked?.by || 'a participant';
+            const resumeTime = sessionData.parked?.until ? formatDate(sessionData.parked.until) : 'soon';
+            const canResume = sessionData.parked?.by_user_id === currentUser.id;
+
+            const banner = document.createElement('div');
+            banner.className = 'parked-banner';
+            banner.innerHTML = `
+                <h3>&#127359; Session Parked</h3>
+                <p>Parked by: <strong>${escapeHtml(parkedBy)}</strong></p>
+                <p>Resumes automatically: <span class="resume-time">${resumeTime}</span></p>
+                ${canResume ? '<button class="btn btn-primary mt-lg" onclick="resumeEarly()">Resume Early</button>' : ''}
+                <p class="text-muted mt-md">While parked you can view and add documents, but cannot finalize agreement.</p>
+            `;
+
+            const content = document.getElementById('workspace-content');
+            content.insertBefore(banner, content.firstChild);
+
+            renderParticipants();
+            renderDocuments();
+            renderParkStatus();
+        }
+
+        function renderParticipants() {
+            const container = document.getElementById('participants-list');
+            const participants = [];
+
+            // Initiator
+            if (sessionData.initiator) {
+                participants.push({
+                    name: sessionData.initiator.email,
+                    role: 'Initiator',
+                    isYou: sessionData.initiator.user_id === currentUser.id || isInitiator,
+                    agreed: sessionData.initiator.agreed
+                });
+            }
+
+            // Counterparty
+            if (sessionData.counterparty) {
+                participants.push({
+                    name: sessionData.counterparty.email,
+                    role: 'Counterparty',
+                    isYou: sessionData.counterparty.user_id === currentUser.id,
+                    agreed: sessionData.counterparty.agreed,
+                    verified: sessionData.counterparty.verified
+                });
+            }
+
+            container.innerHTML = participants.map(p => `
+                <div class="participant-row">
+                    <div class="participant-info">
+                        <span class="participant-icon">&#128100;</span>
+                        <div>
+                            <div class="participant-name">${escapeHtml(p.name)}${p.isYou ? ' (you)' : ''}</div>
+                            <div class="participant-role">${p.role}</div>
+                        </div>
+                    </div>
+                    <div class="participant-status ${p.agreed ? 'agreed' : 'pending'}">
+                        ${p.agreed ? '&#9989; Agreed' : '&#9203; Reviewing'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderDocuments() {
+            const container = document.getElementById('documents-container');
+            const docs = sessionData.documents || [];
+
+            // Group by uploader
+            const byInitiator = docs.filter(d => d.is_own === isInitiator);
+            const byCounterparty = docs.filter(d => d.is_own !== isInitiator);
+
+            let html = '';
+
+            if (byInitiator.length > 0 || isInitiator) {
+                html += `
+                    <div class="documents-group">
+                        <div class="documents-group-title">From ${isInitiator ? 'You' : sessionData.initiator?.email || 'Initiator'}</div>
+                        <div class="documents-list">
+                            ${byInitiator.map(d => renderDocumentRow(d)).join('')}
+                            ${byInitiator.length === 0 ? '<p class="text-muted">No documents yet</p>' : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (byCounterparty.length > 0 || !isInitiator) {
+                html += `
+                    <div class="documents-group">
+                        <div class="documents-group-title">From ${!isInitiator ? 'You' : sessionData.counterparty?.email || 'Counterparty'}</div>
+                        <div class="documents-list">
+                            ${byCounterparty.map(d => renderDocumentRow(d)).join('')}
+                            ${byCounterparty.length === 0 ? '<p class="text-muted">No documents yet</p>' : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+
+            // Show upload section
+            if (sessionData.status === 'REVIEW' || sessionData.status === 'PARKED') {
+                document.getElementById('upload-section').classList.remove('hidden');
+            }
+        }
+
+        function renderDocumentRow(doc) {
+            const canDelete = doc.is_own && (sessionData.status === 'REVIEW' || sessionData.status === 'PARKED');
+            return `
+                <div class="document-row">
+                    <div class="document-info">
+                        <span class="document-icon">&#128196;</span>
+                        <div>
+                            <div class="document-name">${escapeHtml(doc.file_name)}</div>
+                            <div class="document-size">${formatFileSize(doc.file_size)}</div>
+                        </div>
+                    </div>
+                    <div class="document-actions">
+                        <button class="btn btn-ghost btn-sm" onclick="viewDocument('${doc.id}')">View</button>
+                        <button class="btn btn-ghost btn-sm" onclick="downloadDocument('${doc.id}')">&#11015;</button>
+                        ${canDelete ? `<button class="btn btn-ghost btn-sm" onclick="deleteDocument('${doc.id}')">&times;</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderParkStatus() {
+            const section = document.getElementById('park-section');
+            const container = document.getElementById('park-status');
+
+            if (sessionData.status !== 'REVIEW') {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+
+            // Simplified park status - each party gets 1 park
+            const myParkUsed = isInitiator ? sessionData.initiator_parked : sessionData.counterparty_parked;
+            const theirParkUsed = isInitiator ? sessionData.counterparty_parked : sessionData.initiator_parked;
+
+            container.innerHTML = `
+                <div class="park-status-item ${myParkUsed ? 'park-used' : 'park-available'}">
+                    ${myParkUsed ? '&#10060;' : '&#9989;'} Your park: ${myParkUsed ? 'Used' : 'Available'}
+                </div>
+                <div class="park-status-item ${theirParkUsed ? 'park-used' : 'park-available'}">
+                    ${theirParkUsed ? '&#10060;' : '&#9989;'} Their park: ${theirParkUsed ? 'Used' : 'Available'}
+                </div>
+            `;
+        }
+
+        function renderInfoBox() {
+            const infoBox = document.getElementById('info-box');
+            const infoText = document.getElementById('info-text');
+
+            infoBox.classList.remove('hidden');
+            infoText.innerHTML = `
+                Review all documents carefully. Both parties must agree before the attestation is finalized.
+                <strong>Adding new documents resets the other party's agreement.</strong>
+            `;
+        }
+
+        function renderActions() {
+            const container = document.getElementById('actions-container');
+            container.classList.remove('hidden');
+
+            const myParkUsed = isInitiator ? sessionData.initiator_parked : sessionData.counterparty_parked;
+            const canPark = !myParkUsed && sessionData.status === 'REVIEW';
+
+            container.innerHTML = `
+                ${canPark ? '<button class="btn btn-ghost" onclick="showParkModal()">Use My Park</button>' : ''}
+                <button class="btn btn-danger" onclick="showDeclineModal()">Decline</button>
+                <button class="btn btn-agree" onclick="handleAgree()">I Agree to These Terms</button>
+            `;
+        }
+
+        function renderAgreedState() {
+            document.getElementById('workspace-content').classList.add('hidden');
+            document.getElementById('completion-state').classList.remove('hidden');
+
+            const attestation = sessionData.attestation || {};
+            document.getElementById('attestation-id').textContent = attestation.id || sessionData.attestation_id || '--';
+
+            const txHash = attestation.tx_hash || sessionData.anchor_tx_hash;
+            const txLink = document.getElementById('tx-link');
+            const polygonLink = document.getElementById('polygonscan-link');
+
+            if (txHash) {
+                txLink.textContent = txHash.substring(0, 10) + '...' + txHash.substring(txHash.length - 8);
+                txLink.href = `https://polygonscan.com/tx/${txHash}`;
+                polygonLink.href = `https://polygonscan.com/tx/${txHash}`;
+            } else {
+                txLink.textContent = 'Pending...';
+                txLink.removeAttribute('href');
+            }
+
+            // Render attested documents
+            const docs = sessionData.documents || [];
+            const docsContainer = document.getElementById('attested-docs-list');
+
+            docsContainer.innerHTML = docs.map(d => `
+                <div class="attested-doc-item">
+                    <div class="attested-doc-name">
+                        <span>&#128196;</span>
+                        <span>${escapeHtml(d.file_name)}</span>
+                    </div>
+                    <span class="attested-doc-hash">${d.content_hash?.substring(0, 12)}...</span>
+                </div>
+            `).join('');
+        }
+
+        function renderVoidState(title) {
+            document.getElementById('workspace-content').classList.add('hidden');
+            document.getElementById('void-state').classList.remove('hidden');
+            document.getElementById('void-title').textContent = title;
+
+            let message = 'This session has been terminated.';
+            if (sessionData.status === 'VOID') {
+                message = `Session declined on ${formatDate(sessionData.voided_at || sessionData.updated_at)}.`;
+            } else if (sessionData.status === 'EXPIRED') {
+                message = `Session expired on ${formatDate(sessionData.expires_at)} without agreement.`;
+            }
+            document.getElementById('void-message').textContent = message;
+        }
+
+        // Actions
+        async function handleAgree() {
+            if (!confirm('Are you sure you want to agree to these terms? This action signifies your consent to the documents in this session.')) {
+                return;
+            }
+
+            try {
+                showToast('Submitting agreement...', 'info');
+                const response = await fetchWithAuth(`/enforced/sessions/${sessionId}/agree`, {
+                    method: 'POST'
+                });
+
+                if (response.all_agreed) {
+                    showToast('All parties agreed! Attestation created.', 'success');
+                } else {
+                    showToast('Agreement submitted. Waiting for other party.', 'success');
+                }
+
+                await loadSession();
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function showParkModal() {
+            document.getElementById('park-modal').classList.remove('hidden');
+        }
+
+        function closeParkModal() {
+            document.getElementById('park-modal').classList.add('hidden');
+        }
+
+        async function confirmPark() {
+            closeParkModal();
+            try {
+                showToast('Parking session...', 'info');
+                await fetchWithAuth(`/enforced/sessions/${sessionId}/park`, {
+                    method: 'POST',
+                    body: JSON.stringify({ duration: '72h' })
+                });
+                showToast('Session parked for 72 hours', 'success');
+                await loadSession();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function resumeEarly() {
+            if (!confirm('Resume the session early?')) return;
+
+            try {
+                await fetchWithAuth(`/enforced/sessions/${sessionId}/resume`, {
+                    method: 'POST'
+                });
+                showToast('Session resumed', 'success');
+                await loadSession();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function showDeclineModal() {
+            document.getElementById('decline-modal').classList.remove('hidden');
+        }
+
+        function closeDeclineModal() {
+            document.getElementById('decline-modal').classList.add('hidden');
+        }
+
+        async function confirmDecline() {
+            const reason = document.getElementById('decline-reason').value.trim();
+            closeDeclineModal();
+
+            try {
+                showToast('Declining session...', 'info');
+                await fetchWithAuth(`/enforced/sessions/${sessionId}/decline`, {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: reason || undefined })
+                });
+                showToast('Session declined', 'info');
+                await loadSession();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function resendInvitation() {
+            try {
+                await fetchWithAuth(`/enforced/sessions/${sessionId}/resend`, {
+                    method: 'POST'
+                });
+                showToast('Invitation resent', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function cancelSession() {
+            if (!confirm('Are you sure you want to cancel this session?')) return;
+
+            try {
+                await fetchWithAuth(`/enforced/sessions/${sessionId}/decline`, {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: 'Cancelled by initiator' })
+                });
+                showToast('Session cancelled', 'info');
+                window.location.href = 'index.html';
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Document handling
+        async function handleDocumentUpload(event) {
+            const files = Array.from(event.target.files);
+            event.target.value = '';
+
+            for (const file of files) {
+                if (file.size > 50 * 1024 * 1024) {
+                    showToast(`${file.name} exceeds 50MB limit`, 'error');
+                    continue;
+                }
+
+                try {
+                    showToast(`Uploading ${file.name}...`, 'info');
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('file_name', file.name);
+                    formData.append('file_size', file.size);
+                    formData.append('mime_type', file.type || 'application/octet-stream');
+
+                    const response = await fetch(`${API_BASE}/enforced/sessions/${sessionId}/documents`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${getToken()}`,
+                        },
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(data.message || 'Upload failed');
+                    }
+
+                    showToast(`${file.name} uploaded`, 'success');
+
+                } catch (error) {
+                    showToast(`Failed to upload ${file.name}: ${error.message}`, 'error');
+                }
+            }
+
+            await loadSession();
+        }
+
+        async function viewDocument(docId) {
+            try {
+                const response = await fetchWithAuth(`/enforced/sessions/${sessionId}/documents/${docId}/url`);
+                const doc = sessionData.documents?.find(d => d.id === docId);
+
+                const modal = document.getElementById('doc-viewer-modal');
+                modal.classList.remove('hidden');
+
+                document.getElementById('doc-viewer-title').textContent = doc?.file_name || 'Document';
+                document.getElementById('doc-viewer-uploader').textContent = doc?.uploaded_by || 'Unknown';
+                document.getElementById('doc-viewer-hash').textContent = doc?.content_hash || '';
+
+                currentDocUrl = response.url;
+
+                // For PDFs, try to embed
+                const contentEl = document.getElementById('doc-viewer-content');
+                if (doc?.mime_type === 'application/pdf' || doc?.file_name?.endsWith('.pdf')) {
+                    contentEl.innerHTML = `<iframe src="${response.url}" title="Document viewer"></iframe>`;
+                } else {
+                    contentEl.innerHTML = `
+                        <div class="doc-viewer-placeholder">
+                            <div>
+                                <p>Preview not available for this file type.</p>
+                                <button class="btn btn-primary mt-lg" onclick="downloadCurrentDoc()">Download to View</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function closeDocViewer() {
+            document.getElementById('doc-viewer-modal').classList.add('hidden');
+            currentDocUrl = null;
+        }
+
+        function downloadCurrentDoc() {
+            if (currentDocUrl) {
+                window.open(currentDocUrl, '_blank');
+            }
+        }
+
+        async function downloadDocument(docId) {
+            try {
+                const response = await fetchWithAuth(`/enforced/sessions/${sessionId}/documents/${docId}/url`);
+                window.open(response.url, '_blank');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function deleteDocument(docId) {
+            if (!confirm('Delete this document?')) return;
+
+            try {
+                await fetchWithAuth(`/enforced/sessions/${sessionId}/documents/${docId}`, {
+                    method: 'DELETE'
+                });
+                showToast('Document deleted', 'success');
+                await loadSession();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function downloadProofPDF() {
+            try {
+                const attestationId = sessionData.attestation?.id || sessionData.attestation_id;
+                if (!attestationId) {
+                    showToast('Attestation not found', 'error');
+                    return;
+                }
+                window.open(`${API_BASE}/attestations/${attestationId}/pdf`, '_blank');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Helpers
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '--';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        }
+
+        function toggleMobileNav() {
+            document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+    </script>
+</body>
+</html>

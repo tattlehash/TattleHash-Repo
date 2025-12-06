@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Yourself - Gatekeeper - TattleHash</title>
+    <meta name="description" content="Complete your verification to unlock Gatekeeper.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="index.html" class="active">Gatekeeper</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="verify-page">
+        <div class="container">
+            <div class="verify-container animate-fade-in">
+                <a href="index.html" class="back-link">&larr; Back to Gatekeeper</a>
+
+                <h1 class="page-title">Verify <span class="text-gradient">Yourself</span></h1>
+                <p class="page-subtitle">Complete verification to unlock Gatekeeper and earn your badge.</p>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading...</p>
+                </div>
+
+                <!-- Step 1: Profile Selection -->
+                <div id="step-profile" class="verify-step hidden">
+                    <div class="step-header">
+                        <span class="step-number">1</span>
+                        <h2>Select Verification Profile</h2>
+                    </div>
+                    <p class="step-description">Choose the profile that matches your verification needs.</p>
+
+                    <div id="profiles-list" class="profiles-list">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Step 2: Connect Wallet -->
+                <div id="step-wallet" class="verify-step hidden">
+                    <div class="step-header">
+                        <span class="step-number">2</span>
+                        <h2>Connect & Sign with Wallet</h2>
+                    </div>
+                    <p class="step-description">Prove ownership of your wallet by signing a message.</p>
+
+                    <div class="wallet-connect-card">
+                        <div id="wallet-status" class="wallet-status">
+                            <span class="wallet-icon">&#128176;</span>
+                            <span>No wallet connected</span>
+                        </div>
+
+                        <button id="connect-wallet-btn" class="btn btn-primary btn-lg" onclick="connectWallet()">
+                            Connect MetaMask
+                        </button>
+
+                        <div id="sign-section" class="sign-section hidden">
+                            <p class="text-muted">Connected: <span id="connected-address"></span></p>
+                            <p class="sign-message-preview" id="sign-message-preview"></p>
+                            <button id="sign-btn" class="btn btn-primary btn-lg" onclick="signMessage()">
+                                Sign Message
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Verification Progress -->
+                <div id="step-progress" class="verify-step hidden">
+                    <div class="step-header">
+                        <span class="step-number">3</span>
+                        <h2>Verification in Progress</h2>
+                    </div>
+                    <p class="step-description">Running verification checks on your wallet.</p>
+
+                    <div id="checks-list" class="checks-list">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Step 4: Results -->
+                <div id="step-results" class="verify-step hidden">
+                    <div class="results-card" id="results-card">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .verify-page {
+            padding: var(--spacing-xl) 0;
+            min-height: 100vh;
+        }
+
+        .verify-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .back-link:hover {
+            color: var(--accent-cyan);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: var(--spacing-4xl);
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Steps */
+        .verify-step {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .step-header h2 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .step-description {
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-lg);
+            padding-left: 48px;
+        }
+
+        /* Profiles */
+        .profiles-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .profile-card {
+            background: var(--bg-surface);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .profile-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .profile-card.selected {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .profile-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .profile-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .profile-check {
+            display: none;
+            color: var(--accent-cyan);
+            font-size: 1.25rem;
+        }
+
+        .profile-card.selected .profile-check {
+            display: block;
+        }
+
+        .profile-description {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .profile-checks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+        }
+
+        .profile-check-tag {
+            background: var(--bg-elevated);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .select-profile-btn {
+            margin-top: var(--spacing-lg);
+        }
+
+        /* Wallet Connect */
+        .wallet-connect-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            text-align: center;
+        }
+
+        .wallet-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+            color: var(--text-muted);
+        }
+
+        .wallet-icon {
+            font-size: 1.5rem;
+        }
+
+        .sign-section {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-xl);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .sign-message-preview {
+            background: var(--bg-elevated);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: var(--spacing-lg) 0;
+            word-break: break-all;
+        }
+
+        /* Checks List */
+        .checks-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .check-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .check-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .check-icon.pending {
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+        }
+
+        .check-icon.in-progress {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-cyan);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .check-icon.positive {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+
+        .check-icon.warning {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+
+        .check-icon.neutral {
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .check-info {
+            flex: 1;
+        }
+
+        .check-name {
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .check-result {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Results Card */
+        .results-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            text-align: center;
+        }
+
+        .results-card.has-badge {
+            border-color: var(--success);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .results-card.no-badge {
+            border-color: var(--warning);
+            background: rgba(255, 170, 0, 0.05);
+        }
+
+        .results-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .results-title {
+            font-size: 1.5rem;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .results-subtitle {
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .results-summary {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            padding: var(--spacing-lg);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .step-description {
+                padding-left: 0;
+            }
+
+            .results-summary {
+                flex-direction: column;
+                gap: var(--spacing-md);
+            }
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let profiles = [];
+        let selectedProfile = null;
+        let verification = null;
+        let walletAddress = null;
+        let pollInterval = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '../login.html?redirect=' + encodeURIComponent('/gatekeeper/verify.html');
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            await loadInitialState();
+        });
+
+        async function loadInitialState() {
+            try {
+                // Check for existing verification
+                const verifyResponse = await fetchWithAuth('/gatekeeper/verification');
+                verification = verifyResponse.verification;
+
+                if (verification && verification.status === 'COMPLETED') {
+                    showResults();
+                    return;
+                }
+
+                if (verification && verification.status === 'IN_PROGRESS') {
+                    showProgress();
+                    return;
+                }
+
+                // Load profiles
+                await loadProfiles();
+                showProfileSelection();
+
+            } catch (error) {
+                if (error.message.includes('Session expired')) return;
+                // No verification, show profile selection
+                await loadProfiles();
+                showProfileSelection();
+            }
+        }
+
+        async function loadProfiles() {
+            const response = await fetchWithAuth('/gatekeeper/profiles');
+            profiles = response.profiles || [];
+        }
+
+        function showProfileSelection() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('step-profile').classList.remove('hidden');
+
+            const container = document.getElementById('profiles-list');
+            container.innerHTML = profiles.map(profile => `
+                <div class="profile-card" onclick="selectProfile('${profile.id}')" id="profile-${profile.id}">
+                    <div class="profile-card-header">
+                        <span class="profile-name">${escapeHtml(profile.name)}</span>
+                        <span class="profile-check">&#10004;</span>
+                    </div>
+                    <p class="profile-description">${escapeHtml(profile.description)}</p>
+                    <div class="profile-checks">
+                        ${profile.checks.map(c => `<span class="profile-check-tag">${escapeHtml(c.name)}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML += `
+                <button id="continue-profile-btn" class="btn btn-primary btn-lg select-profile-btn" onclick="continueToWallet()" disabled>
+                    Continue
+                </button>
+            `;
+        }
+
+        function selectProfile(profileId) {
+            selectedProfile = profiles.find(p => p.id === profileId);
+
+            document.querySelectorAll('.profile-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.getElementById(`profile-${profileId}`).classList.add('selected');
+            document.getElementById('continue-profile-btn').disabled = false;
+        }
+
+        function continueToWallet() {
+            if (!selectedProfile) return;
+
+            document.getElementById('step-profile').classList.add('hidden');
+            document.getElementById('step-wallet').classList.remove('hidden');
+        }
+
+        async function connectWallet() {
+            if (!isMetaMaskInstalled()) {
+                showToast('Please install MetaMask to continue', 'error');
+                return;
+            }
+
+            try {
+                setButtonLoading('connect-wallet-btn', true);
+                walletAddress = await connectMetaMask();
+
+                document.getElementById('wallet-status').innerHTML = `
+                    <span class="wallet-icon">&#10004;</span>
+                    <span style="color: var(--success);">Wallet Connected</span>
+                `;
+
+                document.getElementById('connect-wallet-btn').classList.add('hidden');
+                document.getElementById('sign-section').classList.remove('hidden');
+                document.getElementById('connected-address').textContent = truncateAddress(walletAddress);
+
+                // Generate message to sign
+                const message = `TattleHash Gatekeeper Verification\n\nWallet: ${walletAddress}\nTimestamp: ${new Date().toISOString()}\n\nSigning this message proves you own this wallet.`;
+                document.getElementById('sign-message-preview').textContent = message;
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                setButtonLoading('connect-wallet-btn', false, 'Connect MetaMask');
+            }
+        }
+
+        async function signMessage() {
+            if (!walletAddress) return;
+
+            try {
+                setButtonLoading('sign-btn', true);
+
+                const message = document.getElementById('sign-message-preview').textContent;
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, walletAddress],
+                });
+
+                // Start verification
+                const startResponse = await postWithAuth('/gatekeeper/verification', {
+                    profile_id: selectedProfile.id,
+                    wallet_address: walletAddress,
+                });
+
+                verification = startResponse.verification;
+
+                // Submit wallet signature
+                const walletResponse = await postWithAuth('/gatekeeper/verification/wallet', {
+                    wallet_address: walletAddress,
+                    signature: signature,
+                    message: message,
+                    chain: 'ethereum',
+                });
+
+                verification = walletResponse.verification;
+
+                showProgress();
+
+            } catch (error) {
+                if (error.code === 4001) {
+                    showToast('Signature request was cancelled', 'warning');
+                } else {
+                    showToast(error.message, 'error');
+                }
+            } finally {
+                setButtonLoading('sign-btn', false, 'Sign Message');
+            }
+        }
+
+        function showProgress() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('step-profile').classList.add('hidden');
+            document.getElementById('step-wallet').classList.add('hidden');
+            document.getElementById('step-progress').classList.remove('hidden');
+
+            renderChecks();
+            startPolling();
+        }
+
+        function renderChecks() {
+            const container = document.getElementById('checks-list');
+            const checks = verification.checks || [];
+
+            container.innerHTML = checks.map(check => {
+                const iconClass = getCheckIconClass(check.status, check.signal_type);
+                const icon = getCheckIcon(check.status, check.signal_type);
+
+                return `
+                    <div class="check-item">
+                        <div class="check-icon ${iconClass}">${icon}</div>
+                        <div class="check-info">
+                            <div class="check-name">${escapeHtml(check.name)}</div>
+                            <div class="check-result">${escapeHtml(check.signal_text || getCheckStatusText(check.status))}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getCheckIconClass(status, signalType) {
+            if (status === 'PENDING') return 'pending';
+            if (status === 'IN_PROGRESS') return 'in-progress';
+            if (signalType === 'positive') return 'positive';
+            if (signalType === 'warning') return 'warning';
+            return 'neutral';
+        }
+
+        function getCheckIcon(status, signalType) {
+            if (status === 'PENDING') return '&#9711;';
+            if (status === 'IN_PROGRESS') return '&#8635;';
+            if (signalType === 'positive') return '&#10004;';
+            if (signalType === 'warning') return '&#9888;';
+            return '&#8226;';
+        }
+
+        function getCheckStatusText(status) {
+            switch (status) {
+                case 'PENDING': return 'Waiting to run...';
+                case 'IN_PROGRESS': return 'Running check...';
+                default: return status;
+            }
+        }
+
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetchWithAuth('/gatekeeper/verification/status');
+                    verification = response.verification;
+
+                    if (!verification) {
+                        stopPolling();
+                        return;
+                    }
+
+                    renderChecks();
+
+                    if (verification.status === 'COMPLETED') {
+                        stopPolling();
+                        setTimeout(() => showResults(), 500);
+                    }
+
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 2000);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        function showResults() {
+            stopPolling();
+
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('step-profile').classList.add('hidden');
+            document.getElementById('step-wallet').classList.add('hidden');
+            document.getElementById('step-progress').classList.add('hidden');
+            document.getElementById('step-results').classList.remove('hidden');
+
+            const card = document.getElementById('results-card');
+            const hasBadge = verification.badge_granted;
+
+            card.classList.remove('has-badge', 'no-badge');
+            card.classList.add(hasBadge ? 'has-badge' : 'no-badge');
+
+            const checks = verification.checks || [];
+            const passed = checks.filter(c => c.signal_type === 'positive').length;
+            const warnings = checks.filter(c => c.signal_type === 'warning').length;
+
+            card.innerHTML = `
+                <div class="results-icon">${hasBadge ? '&#10004;' : '&#9888;&#65039;'}</div>
+                <h2 class="results-title">${hasBadge ? 'Verification Complete!' : 'Verification Complete'}</h2>
+                <p class="results-subtitle">
+                    ${hasBadge
+                        ? 'Congratulations! You earned your badge and can now create Gatekeeper sessions.'
+                        : 'You can use Gatekeeper, but your wallet did not meet all badge criteria.'}
+                </p>
+
+                <div class="results-summary">
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: var(--success);">${passed}</div>
+                        <div class="summary-label">Passed</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: var(--warning);">${warnings}</div>
+                        <div class="summary-label">Warnings</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value">${getSignalLabel(verification.signal_summary)}</div>
+                        <div class="summary-label">Signal</div>
+                    </div>
+                </div>
+
+                <div class="checks-list" style="text-align: left; margin-bottom: var(--spacing-xl);">
+                    ${checks.map(check => `
+                        <div class="check-item">
+                            <div class="check-icon ${getCheckIconClass(check.status, check.signal_type)}">${getCheckIcon(check.status, check.signal_type)}</div>
+                            <div class="check-info">
+                                <div class="check-name">${escapeHtml(check.name)}</div>
+                                <div class="check-result">${escapeHtml(check.signal_text || 'Completed')}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <a href="index.html" class="btn btn-primary btn-lg">Go to Gatekeeper</a>
+            `;
+        }
+
+        function getSignalLabel(signal) {
+            const labels = {
+                CLEAR: 'Clear',
+                CAUTION: 'Caution',
+                REVIEW_RECOMMENDED: 'Review'
+            };
+            return labels[signal] || signal || '--';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        }
+    </script>
+</body>
+</html>

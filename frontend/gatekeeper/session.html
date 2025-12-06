@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Details - Gatekeeper - TattleHash</title>
+    <meta name="description" content="View Gatekeeper session details and verification results.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="index.html" class="active">Gatekeeper</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="session-page">
+        <div class="container">
+            <div class="session-container animate-fade-in">
+                <a href="index.html" class="back-link">&larr; Back to Sessions</a>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading session...</p>
+                </div>
+
+                <!-- Session Content -->
+                <div id="session-content" class="hidden">
+                    <!-- Header -->
+                    <div class="session-header">
+                        <div>
+                            <h1 id="session-title" class="page-title">Session</h1>
+                            <p id="session-counterparty" class="page-subtitle"></p>
+                        </div>
+                        <div id="session-status"></div>
+                    </div>
+
+                    <!-- Signal Summary (for completed sessions) -->
+                    <div id="signal-summary" class="signal-summary-card hidden">
+                        <!-- Filled by JS -->
+                    </div>
+
+                    <!-- Session Info Card -->
+                    <div class="info-card">
+                        <h3>Session Details</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Created</span>
+                                <span id="info-created" class="info-value">--</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Status</span>
+                                <span id="info-status" class="info-value">--</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Counterparty</span>
+                                <span id="info-counterparty" class="info-value">--</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Wallet</span>
+                                <span id="info-wallet" class="info-value">--</span>
+                            </div>
+                        </div>
+                        <div id="info-description" class="info-description hidden"></div>
+                    </div>
+
+                    <!-- Verification Checks -->
+                    <div id="checks-section" class="checks-section hidden">
+                        <h3>Verification Checks</h3>
+                        <div id="checks-list" class="checks-list">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div id="actions-section" class="actions-section hidden">
+                        <!-- Filled by JS based on status -->
+                    </div>
+
+                    <!-- Attestation (for completed sessions) -->
+                    <div id="attestation-section" class="attestation-section hidden">
+                        <h3>Attestation Record</h3>
+                        <div id="attestation-content" class="attestation-content">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .session-page {
+            padding: var(--spacing-xl) 0;
+            min-height: 100vh;
+        }
+
+        .session-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .back-link:hover {
+            color: var(--accent-cyan);
+        }
+
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: var(--spacing-4xl);
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Header */
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
+        .status-badge.active { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+        .status-badge.completed { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .status-badge.aborted { background: rgba(255, 68, 68, 0.2); color: var(--error); }
+
+        /* Signal Summary Card */
+        .signal-summary-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .signal-summary-card.clear {
+            border-color: var(--success);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .signal-summary-card.caution {
+            border-color: var(--warning);
+            background: rgba(255, 170, 0, 0.05);
+        }
+
+        .signal-summary-card.review {
+            border-color: var(--error);
+            background: rgba(255, 68, 68, 0.05);
+        }
+
+        .signal-icon {
+            font-size: 48px;
+        }
+
+        .signal-info {
+            flex: 1;
+        }
+
+        .signal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .signal-subtitle {
+            color: var(--text-muted);
+        }
+
+        /* Info Card */
+        .info-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .info-card h3 {
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.1rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-lg);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-weight: 500;
+        }
+
+        .info-description {
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        /* Checks Section */
+        .checks-section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .checks-section h3 {
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.1rem;
+        }
+
+        .checks-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .check-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .check-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .check-icon.positive { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .check-icon.warning { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
+        .check-icon.neutral { background: var(--bg-elevated); color: var(--text-muted); }
+        .check-icon.pending { background: var(--bg-elevated); color: var(--text-muted); }
+
+        .check-info {
+            flex: 1;
+        }
+
+        .check-name {
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .check-result {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Actions Section */
+        .actions-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .actions-section h3 {
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.1rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-wrap: wrap;
+        }
+
+        .waiting-message {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            color: var(--text-muted);
+        }
+
+        .waiting-spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Attestation Section */
+        .attestation-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+        }
+
+        .attestation-section h3 {
+            margin-bottom: var(--spacing-lg);
+            font-size: 1.1rem;
+        }
+
+        .attestation-content {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+        }
+
+        .attestation-item {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .attestation-item:last-child {
+            border-bottom: none;
+        }
+
+        .attestation-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .attestation-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            word-break: break-all;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        @media (max-width: 768px) {
+            .session-header {
+                flex-direction: column;
+                gap: var(--spacing-md);
+            }
+
+            .signal-summary-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+            }
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let session = null;
+        let pollInterval = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                const sessionId = getUrlParam('id');
+                window.location.href = '../login.html?redirect=' + encodeURIComponent(`/gatekeeper/session.html?id=${sessionId}`);
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            await loadSession();
+        });
+
+        async function loadSession() {
+            const sessionId = getUrlParam('id');
+            if (!sessionId) {
+                showToast('No session ID provided', 'error');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const response = await fetchWithAuth(`/gatekeeper/sessions/${sessionId}`);
+                session = response.session;
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('session-content').classList.remove('hidden');
+
+                renderSession();
+
+                // Start polling if session is active
+                if (!['COMPLETED', 'ABORTED', 'EXPIRED'].includes(session.status)) {
+                    startPolling();
+                }
+
+            } catch (error) {
+                if (error.message.includes('Session expired')) return;
+                document.getElementById('loading-state').innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: var(--spacing-lg);">&#9888;&#65039;</div>
+                    <p>${escapeHtml(error.message)}</p>
+                    <a href="index.html" class="btn btn-primary mt-lg">Back to Sessions</a>
+                `;
+            }
+        }
+
+        function renderSession() {
+            // Title and counterparty
+            document.getElementById('session-title').textContent = session.title || 'Verification Session';
+            document.getElementById('session-counterparty').textContent = `Counterparty: ${session.counterparty_email}`;
+
+            // Status badge
+            const statusClass = getStatusClass(session.status);
+            document.getElementById('session-status').innerHTML = `
+                <span class="status-badge ${statusClass}">${getStatusLabel(session.status)}</span>
+            `;
+
+            // Signal summary (if completed)
+            if (session.status === 'COMPLETED' || session.status === 'CHECKS_COMPLETE') {
+                showSignalSummary();
+            }
+
+            // Info card
+            document.getElementById('info-created').textContent = formatDate(session.created_at);
+            document.getElementById('info-status').textContent = getStatusLabel(session.status);
+            document.getElementById('info-counterparty').textContent = session.counterparty_email;
+            document.getElementById('info-wallet').textContent = session.counterparty_wallet
+                ? truncateAddress(session.counterparty_wallet)
+                : 'Not submitted yet';
+
+            if (session.description) {
+                document.getElementById('info-description').classList.remove('hidden');
+                document.getElementById('info-description').textContent = session.description;
+            }
+
+            // Checks (if available)
+            if (session.checks && session.checks.length > 0) {
+                document.getElementById('checks-section').classList.remove('hidden');
+                renderChecks();
+            }
+
+            // Actions
+            renderActions();
+
+            // Attestation (if completed)
+            if (session.status === 'COMPLETED' && session.attestation_hash) {
+                renderAttestation();
+            }
+        }
+
+        function showSignalSummary() {
+            const card = document.getElementById('signal-summary');
+            card.classList.remove('hidden', 'clear', 'caution', 'review');
+
+            const signal = session.signal_summary;
+            let signalClass, icon, title, subtitle;
+
+            switch (signal) {
+                case 'CLEAR':
+                    signalClass = 'clear';
+                    icon = '&#10004;';
+                    title = 'Clear Signal';
+                    subtitle = 'All verification checks passed. No warnings detected.';
+                    break;
+                case 'CAUTION':
+                    signalClass = 'caution';
+                    icon = '&#9888;&#65039;';
+                    title = 'Caution';
+                    subtitle = 'Some checks raised warnings. Review the details below.';
+                    break;
+                case 'REVIEW_RECOMMENDED':
+                    signalClass = 'review';
+                    icon = '&#128680;';
+                    title = 'Review Recommended';
+                    subtitle = 'Multiple warnings detected. Careful review recommended before proceeding.';
+                    break;
+                default:
+                    return;
+            }
+
+            card.classList.add(signalClass);
+            card.innerHTML = `
+                <div class="signal-icon">${icon}</div>
+                <div class="signal-info">
+                    <div class="signal-title">${title}</div>
+                    <div class="signal-subtitle">${subtitle}</div>
+                </div>
+            `;
+        }
+
+        function renderChecks() {
+            const container = document.getElementById('checks-list');
+            container.innerHTML = session.checks.map(check => {
+                const iconClass = check.signal_type || 'pending';
+                const icon = getCheckIcon(check.signal_type);
+
+                return `
+                    <div class="check-item">
+                        <div class="check-icon ${iconClass}">${icon}</div>
+                        <div class="check-info">
+                            <div class="check-name">${escapeHtml(check.name)}</div>
+                            <div class="check-result">${escapeHtml(check.signal_text || getCheckStatusText(check.status))}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderActions() {
+            const section = document.getElementById('actions-section');
+            section.classList.remove('hidden');
+
+            let content = '<h3>Actions</h3>';
+
+            switch (session.status) {
+                case 'PENDING':
+                case 'EMAIL_SENT':
+                case 'COUNTERPARTY_INVITED':
+                    const testCode = session._test_verification_code;
+                    content += `
+                        <div class="waiting-message">
+                            <div class="waiting-spinner"></div>
+                            <span>Waiting for counterparty to verify their email...</span>
+                        </div>
+                        ${testCode ? `
+                        <div style="background: rgba(255, 170, 0, 0.1); border: 1px solid var(--warning); border-radius: var(--radius-md); padding: var(--spacing-lg); margin-top: var(--spacing-lg);">
+                            <strong style="color: var(--warning);">TEST MODE:</strong>
+                            <p style="margin: var(--spacing-sm) 0;">Verification Code: <code style="font-size: 1.5rem; background: var(--bg-elevated); padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--radius-sm);">${testCode}</code></p>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Share this code with the counterparty manually since email is not configured.</p>
+                        </div>
+                        ` : ''}
+                        <div class="action-buttons" style="margin-top: var(--spacing-lg);">
+                            <button class="btn btn-ghost" onclick="resendInvite()">Resend Invite</button>
+                            <button class="btn btn-ghost" onclick="copyInviteLink()">Copy Invite Link</button>
+                            <button class="btn btn-error btn-ghost" onclick="abortSession()">Abort Session</button>
+                        </div>
+                    `;
+                    break;
+
+                case 'CODE_VERIFIED':
+                    content += `
+                        <div class="waiting-message">
+                            <div class="waiting-spinner"></div>
+                            <span>Counterparty verified email. Waiting for wallet verification...</span>
+                        </div>
+                        <div class="action-buttons" style="margin-top: var(--spacing-lg);">
+                            <button class="btn btn-error btn-ghost" onclick="abortSession()">Abort Session</button>
+                        </div>
+                    `;
+                    break;
+
+                case 'WALLET_VERIFIED':
+                    content += `
+                        <div class="waiting-message">
+                            <div class="waiting-spinner"></div>
+                            <span>Running verification checks on counterparty's wallet...</span>
+                        </div>
+                    `;
+                    break;
+
+                case 'CHECKS_COMPLETE':
+                    content += `
+                        <p style="margin-bottom: var(--spacing-lg);">All checks complete. Review the results above and decide how to proceed.</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-lg" onclick="proceedSession()">Proceed & Create Attestation</button>
+                            <button class="btn btn-error btn-ghost" onclick="abortSession()">Abort Session</button>
+                        </div>
+                    `;
+                    break;
+
+                case 'COMPLETED':
+                    section.classList.add('hidden');
+                    return;
+
+                case 'ABORTED':
+                case 'EXPIRED':
+                    content += `
+                        <p style="color: var(--text-muted);">
+                            This session has been ${session.status.toLowerCase()}.
+                            ${session.abort_reason ? `Reason: ${escapeHtml(session.abort_reason)}` : ''}
+                        </p>
+                    `;
+                    break;
+            }
+
+            section.innerHTML = content;
+        }
+
+        function renderAttestation() {
+            const section = document.getElementById('attestation-section');
+            section.classList.remove('hidden');
+
+            const content = document.getElementById('attestation-content');
+            content.innerHTML = `
+                <div class="attestation-item">
+                    <span class="attestation-label">Attestation Hash</span>
+                    <span class="attestation-value">${escapeHtml(session.attestation_hash)}</span>
+                </div>
+                <div class="attestation-item">
+                    <span class="attestation-label">Completed At</span>
+                    <span class="attestation-value">${formatDate(session.completed_at)}</span>
+                </div>
+                <div class="attestation-item">
+                    <span class="attestation-label">Initiator Wallet</span>
+                    <span class="attestation-value">${escapeHtml(session.initiator_wallet || '--')}</span>
+                </div>
+                <div class="attestation-item">
+                    <span class="attestation-label">Counterparty Wallet</span>
+                    <span class="attestation-value">${escapeHtml(session.counterparty_wallet || '--')}</span>
+                </div>
+            `;
+        }
+
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetchWithAuth(`/gatekeeper/sessions/${session.id}`);
+                    const newSession = response.session;
+
+                    if (newSession.status !== session.status) {
+                        session = newSession;
+                        renderSession();
+
+                        if (['COMPLETED', 'ABORTED', 'EXPIRED'].includes(session.status)) {
+                            stopPolling();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 3000);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        async function resendInvite() {
+            try {
+                await postWithAuth(`/gatekeeper/sessions/${session.id}/resend`, {});
+                showToast('Invitation resent!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function copyInviteLink() {
+            const link = `${window.location.origin}/gatekeeper/counterparty-verify.html?id=${session.id}`;
+            copyToClipboard(link);
+        }
+
+        async function proceedSession() {
+            if (!confirm('Are you sure you want to proceed? This will create an immutable attestation record.')) {
+                return;
+            }
+
+            try {
+                const response = await postWithAuth(`/gatekeeper/sessions/${session.id}/proceed`, {});
+                session = response.session;
+                showToast('Attestation created!', 'success');
+                renderSession();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function abortSession() {
+            const reason = prompt('Reason for aborting (optional):');
+
+            try {
+                await postWithAuth(`/gatekeeper/sessions/${session.id}/abort`, { reason });
+                session.status = 'ABORTED';
+                session.abort_reason = reason;
+                showToast('Session aborted', 'info');
+                renderSession();
+                stopPolling();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'PENDING':
+                case 'EMAIL_SENT':
+                    return 'pending';
+                case 'CODE_VERIFIED':
+                case 'WALLET_VERIFIED':
+                case 'CHECKS_COMPLETE':
+                    return 'active';
+                case 'COMPLETED':
+                    return 'completed';
+                case 'ABORTED':
+                case 'EXPIRED':
+                    return 'aborted';
+                default:
+                    return '';
+            }
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                PENDING: 'Pending',
+                EMAIL_SENT: 'Invite Sent',
+                CODE_VERIFIED: 'Email Verified',
+                WALLET_VERIFIED: 'Wallet Verified',
+                CHECKS_COMPLETE: 'Ready to Review',
+                COMPLETED: 'Completed',
+                ABORTED: 'Aborted',
+                EXPIRED: 'Expired'
+            };
+            return labels[status] || status;
+        }
+
+        function getCheckIcon(signalType) {
+            switch (signalType) {
+                case 'positive': return '&#10004;';
+                case 'warning': return '&#9888;';
+                case 'neutral': return '&#8226;';
+                default: return '&#9711;';
+            }
+        }
+
+        function getCheckStatusText(status) {
+            switch (status) {
+                case 'PENDING': return 'Waiting...';
+                case 'IN_PROGRESS': return 'Running...';
+                default: return status;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        }
+    </script>
+</body>
+</html>

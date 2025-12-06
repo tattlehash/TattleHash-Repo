@@ -4,6 +4,7 @@ import { runAnalysis, scanUrls, CreateAnalysisInput } from '../monitoring';
 import { anchorRecord } from '../anchor/service';
 import type { AttestRecord } from '../anchor/storage';
 import { recKey } from '../lib/kv';
+import { execute } from '../db';
 
 interface QueueMessageBody {
     type: string;
@@ -140,6 +141,18 @@ async function handleAnchorJob(
 
         // Save updated receipt
         await env.ATT_KV.put(receiptKey, JSON.stringify(receipt));
+
+        // Update any challenges linked to this receipt with the anchor tx hash
+        try {
+            await execute(
+                env.TATTLEHASH_DB,
+                `UPDATE challenges SET anchor_tx_hash = ?, updated_at = ? WHERE receipt_id = ?`,
+                [result.txHash, Date.now(), receiptId]
+            );
+        } catch (dbError) {
+            // Log but don't fail - the receipt is already anchored
+            console.error('Failed to update challenge with anchor tx:', dbError);
+        }
 
         console.log(JSON.stringify({
             t: Date.now(),

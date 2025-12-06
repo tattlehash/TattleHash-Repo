@@ -20,6 +20,7 @@ export * from './challenges';
 // Game Modes
 export * from './game';
 export * from './enforced';
+export * from './enforced-sessions';
 
 // ENF (Evidence-and-Forward)
 export * from './enf';

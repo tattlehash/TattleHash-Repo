@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Identity - Gatekeeper - TattleHash</title>
+    <meta name="description" content="Complete your Gatekeeper verification to proceed with the transaction.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="counterparty-page">
+        <div class="container">
+            <div class="verify-container animate-fade-in">
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading session...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="error-state" class="error-state hidden">
+                    <div class="error-icon">&#9888;&#65039;</div>
+                    <h2>Session Not Found</h2>
+                    <p id="error-message" class="text-muted"></p>
+                </div>
+
+                <!-- Session Info -->
+                <div id="session-info" class="session-info-card hidden">
+                    <div class="initiator-info">
+                        <div class="initiator-badge" id="initiator-badge"></div>
+                        <div class="initiator-details">
+                            <span class="initiator-label">Verification request from</span>
+                            <span class="initiator-email" id="initiator-email"></span>
+                        </div>
+                    </div>
+                    <div id="session-title-section" class="session-title-section hidden">
+                        <h2 id="display-title"></h2>
+                        <p id="display-description" class="text-muted"></p>
+                    </div>
+                </div>
+
+                <!-- Step 1: Enter Code -->
+                <div id="step-code" class="verify-step hidden">
+                    <div class="step-header">
+                        <span class="step-number">1</span>
+                        <h2>Verify Your Email</h2>
+                    </div>
+                    <p class="step-description">Enter the 6-digit code sent to your email.</p>
+
+                    <form onsubmit="verifyCode(event)" class="code-form">
+                        <div class="code-inputs">
+                            <input type="text" maxlength="1" class="code-input" data-index="0" autocomplete="off">
+                            <input type="text" maxlength="1" class="code-input" data-index="1" autocomplete="off">
+                            <input type="text" maxlength="1" class="code-input" data-index="2" autocomplete="off">
+                            <input type="text" maxlength="1" class="code-input" data-index="3" autocomplete="off">
+                            <input type="text" maxlength="1" class="code-input" data-index="4" autocomplete="off">
+                            <input type="text" maxlength="1" class="code-input" data-index="5" autocomplete="off">
+                        </div>
+                        <button type="submit" id="verify-code-btn" class="btn btn-primary btn-lg">Verify Code</button>
+                        <button type="button" class="btn btn-ghost" onclick="resendCode()">Resend Code</button>
+                    </form>
+                </div>
+
+                <!-- Step 2: Connect Wallet -->
+                <div id="step-wallet" class="verify-step hidden">
+                    <div class="step-header">
+                        <span class="step-number">2</span>
+                        <h2>Verify Your Wallet</h2>
+                    </div>
+                    <p class="step-description">Connect and sign with your wallet to prove ownership.</p>
+
+                    <div class="wallet-connect-card">
+                        <div id="wallet-status" class="wallet-status">
+                            <span class="wallet-icon">&#128176;</span>
+                            <span>No wallet connected</span>
+                        </div>
+
+                        <button id="connect-wallet-btn" class="btn btn-primary btn-lg" onclick="connectWallet()">
+                            Connect MetaMask
+                        </button>
+
+                        <div id="sign-section" class="sign-section hidden">
+                            <p class="text-muted">Connected: <span id="connected-address"></span></p>
+                            <p class="sign-message-preview" id="sign-message-preview"></p>
+                            <button id="sign-btn" class="btn btn-primary btn-lg" onclick="signMessage()">
+                                Sign & Submit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Processing -->
+                <div id="step-processing" class="verify-step hidden">
+                    <div class="processing-card">
+                        <div class="spinner"></div>
+                        <h2>Verification in Progress</h2>
+                        <p class="text-muted">Running verification checks on your wallet. This may take a moment...</p>
+                    </div>
+                </div>
+
+                <!-- Step 4: Complete -->
+                <div id="step-complete" class="verify-step hidden">
+                    <div class="complete-card">
+                        <div class="complete-icon">&#10004;</div>
+                        <h2>Verification Complete!</h2>
+                        <p class="text-muted">Your verification has been submitted. The initiator will review the results and decide how to proceed.</p>
+                        <p class="text-muted" style="margin-top: var(--spacing-lg);">You can close this page now.</p>
+                    </div>
+                </div>
+
+                <!-- Aborted/Expired State -->
+                <div id="step-closed" class="verify-step hidden">
+                    <div class="closed-card">
+                        <div class="closed-icon">&#128683;</div>
+                        <h2 id="closed-title">Session Closed</h2>
+                        <p id="closed-message" class="text-muted"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .counterparty-page {
+            padding: var(--spacing-xl) 0;
+            min-height: 100vh;
+        }
+
+        .verify-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Loading State */
+        .loading-state, .error-state {
+            text-align: center;
+            padding: var(--spacing-4xl);
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        /* Session Info Card */
+        .session-info-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .initiator-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .initiator-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .initiator-badge.has-badge {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+
+        .initiator-badge.no-badge {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+
+        .initiator-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .initiator-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .initiator-email {
+            font-weight: 600;
+        }
+
+        .session-title-section {
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .session-title-section h2 {
+            font-size: 1.1rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        /* Steps */
+        .verify-step {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .step-header h2 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .step-description {
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-lg);
+            padding-left: 48px;
+        }
+
+        /* Code Form */
+        .code-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+            align-items: center;
+        }
+
+        .code-inputs {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .code-input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: var(--bg-surface);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            transition: border-color var(--transition-fast);
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        /* Wallet Connect */
+        .wallet-connect-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            text-align: center;
+        }
+
+        .wallet-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+            color: var(--text-muted);
+        }
+
+        .wallet-icon {
+            font-size: 1.5rem;
+        }
+
+        .sign-section {
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-xl);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .sign-message-preview {
+            background: var(--bg-elevated);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: var(--spacing-lg) 0;
+            word-break: break-all;
+            text-align: left;
+        }
+
+        /* Processing Card */
+        .processing-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-4xl);
+            text-align: center;
+        }
+
+        /* Complete Card */
+        .complete-card {
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px solid var(--success);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-4xl);
+            text-align: center;
+        }
+
+        .complete-icon {
+            font-size: 64px;
+            color: var(--success);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        /* Closed Card */
+        .closed-card {
+            background: rgba(255, 68, 68, 0.05);
+            border: 1px solid var(--error);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-4xl);
+            text-align: center;
+        }
+
+        .closed-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        @media (max-width: 480px) {
+            .code-input {
+                width: 40px;
+                height: 48px;
+                font-size: 1.25rem;
+            }
+
+            .step-description {
+                padding-left: 0;
+            }
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let session = null;
+        let sessionId = null;
+        let walletAddress = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            sessionId = getUrlParam('id');
+            if (!sessionId) {
+                showError('No session ID provided');
+                return;
+            }
+
+            setupCodeInputs();
+            await loadSession();
+        });
+
+        function setupCodeInputs() {
+            const inputs = document.querySelectorAll('.code-input');
+            inputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    e.target.value = value;
+
+                    if (value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                });
+
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const paste = (e.clipboardData || window.clipboardData).getData('text');
+                    const digits = paste.replace(/[^0-9]/g, '').slice(0, 6);
+
+                    digits.split('').forEach((digit, i) => {
+                        if (inputs[i]) {
+                            inputs[i].value = digit;
+                        }
+                    });
+
+                    if (digits.length > 0) {
+                        inputs[Math.min(digits.length, inputs.length - 1)].focus();
+                    }
+                });
+            });
+        }
+
+        async function loadSession() {
+            try {
+                // Use the public session info endpoint
+                const response = await fetch(`${API_BASE}/gatekeeper/sessions/${sessionId}/info`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Session not found');
+                }
+
+                session = data.session;
+
+                document.getElementById('loading-state').classList.add('hidden');
+
+                // Check status
+                if (session.status === 'COMPLETED') {
+                    showComplete();
+                    return;
+                }
+
+                if (['ABORTED', 'EXPIRED'].includes(session.status)) {
+                    showClosed();
+                    return;
+                }
+
+                // Show session info
+                showSessionInfo();
+
+                // Determine which step to show
+                if (['CODE_VERIFIED', 'WALLET_VERIFIED', 'CHECKS_COMPLETE'].includes(session.status)) {
+                    showWalletStep();
+                } else {
+                    showCodeStep();
+                }
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        function showSessionInfo() {
+            const card = document.getElementById('session-info');
+            card.classList.remove('hidden');
+
+            const badge = document.getElementById('initiator-badge');
+            badge.classList.remove('has-badge', 'no-badge');
+            badge.classList.add(session.initiator_has_badge ? 'has-badge' : 'no-badge');
+            badge.innerHTML = session.initiator_has_badge ? '&#10004;' : '&#9888;';
+
+            document.getElementById('initiator-email').textContent = session.initiator_email || 'Unknown';
+
+            if (session.title || session.description) {
+                document.getElementById('session-title-section').classList.remove('hidden');
+                document.getElementById('display-title').textContent = session.title || 'Verification Request';
+                document.getElementById('display-description').textContent = session.description || '';
+            }
+        }
+
+        function showCodeStep() {
+            document.getElementById('step-code').classList.remove('hidden');
+            document.querySelector('.code-input').focus();
+        }
+
+        function showWalletStep() {
+            document.getElementById('step-code').classList.add('hidden');
+            document.getElementById('step-wallet').classList.remove('hidden');
+        }
+
+        function showComplete() {
+            document.getElementById('session-info').classList.add('hidden');
+            document.getElementById('step-code').classList.add('hidden');
+            document.getElementById('step-wallet').classList.add('hidden');
+            document.getElementById('step-processing').classList.add('hidden');
+            document.getElementById('step-complete').classList.remove('hidden');
+        }
+
+        function showClosed() {
+            document.getElementById('session-info').classList.add('hidden');
+            document.getElementById('step-closed').classList.remove('hidden');
+
+            if (session.status === 'ABORTED') {
+                document.getElementById('closed-title').textContent = 'Session Aborted';
+                document.getElementById('closed-message').textContent =
+                    session.abort_reason || 'This verification session has been aborted by the initiator.';
+            } else {
+                document.getElementById('closed-title').textContent = 'Session Expired';
+                document.getElementById('closed-message').textContent = 'This verification session has expired.';
+            }
+        }
+
+        async function verifyCode(e) {
+            e.preventDefault();
+
+            const inputs = document.querySelectorAll('.code-input');
+            const code = Array.from(inputs).map(i => i.value).join('');
+
+            if (code.length !== 6) {
+                showToast('Please enter the complete 6-digit code', 'error');
+                return;
+            }
+
+            try {
+                setButtonLoading('verify-code-btn', true);
+
+                const response = await fetch(`${API_BASE}/gatekeeper/sessions/${sessionId}/verify-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Invalid code');
+                }
+
+                showToast('Email verified!', 'success');
+                showWalletStep();
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                setButtonLoading('verify-code-btn', false, 'Verify Code');
+            }
+        }
+
+        async function resendCode() {
+            try {
+                const response = await fetch(`${API_BASE}/gatekeeper/sessions/${sessionId}/resend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Failed to resend');
+                }
+
+                showToast('Code resent to your email', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function connectWallet() {
+            if (!isMetaMaskInstalled()) {
+                showToast('Please install MetaMask to continue', 'error');
+                return;
+            }
+
+            try {
+                setButtonLoading('connect-wallet-btn', true);
+                walletAddress = await connectMetaMask();
+
+                document.getElementById('wallet-status').innerHTML = `
+                    <span class="wallet-icon">&#10004;</span>
+                    <span style="color: var(--success);">Wallet Connected</span>
+                `;
+
+                document.getElementById('connect-wallet-btn').classList.add('hidden');
+                document.getElementById('sign-section').classList.remove('hidden');
+                document.getElementById('connected-address').textContent = truncateAddress(walletAddress);
+
+                const message = `TattleHash Gatekeeper Verification\n\nSession: ${sessionId}\nWallet: ${walletAddress}\nTimestamp: ${new Date().toISOString()}\n\nSigning this message proves you own this wallet.`;
+                document.getElementById('sign-message-preview').textContent = message;
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                setButtonLoading('connect-wallet-btn', false, 'Connect MetaMask');
+            }
+        }
+
+        async function signMessage() {
+            if (!walletAddress) return;
+
+            try {
+                setButtonLoading('sign-btn', true);
+
+                const message = document.getElementById('sign-message-preview').textContent;
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [message, walletAddress],
+                });
+
+                // Submit wallet verification
+                document.getElementById('step-wallet').classList.add('hidden');
+                document.getElementById('step-processing').classList.remove('hidden');
+
+                const response = await fetch(`${API_BASE}/gatekeeper/sessions/${sessionId}/verify-wallet`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet_address: walletAddress,
+                        signature: signature,
+                        message: message,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Verification failed');
+                }
+
+                // Poll for completion
+                pollForCompletion();
+
+            } catch (error) {
+                document.getElementById('step-processing').classList.add('hidden');
+                document.getElementById('step-wallet').classList.remove('hidden');
+
+                if (error.code === 4001) {
+                    showToast('Signature request was cancelled', 'warning');
+                } else {
+                    showToast(error.message, 'error');
+                }
+            } finally {
+                setButtonLoading('sign-btn', false, 'Sign & Submit');
+            }
+        }
+
+        async function pollForCompletion() {
+            const maxAttempts = 30;
+            let attempts = 0;
+
+            const poll = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/gatekeeper/sessions/${sessionId}/info`);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error('Session not found');
+                    }
+
+                    session = data.session;
+
+                    if (['CHECKS_COMPLETE', 'COMPLETED'].includes(session.status)) {
+                        showComplete();
+                        return;
+                    }
+
+                    if (['ABORTED', 'EXPIRED'].includes(session.status)) {
+                        showClosed();
+                        return;
+                    }
+
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 2000);
+                    } else {
+                        showComplete(); // Show complete anyway after timeout
+                    }
+
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 2000);
+                    }
+                }
+            };
+
+            poll();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        }
+    </script>
+</body>
+</html>

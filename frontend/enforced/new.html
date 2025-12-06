@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Enforced Session - TattleHash</title>
+    <meta name="description" content="Create a two-party enforced attestation session.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="index.html">Enforced Sessions</a></li>
+                <li><a href="new.html" class="active">New Session</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+
+            <div class="nav-toggle" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="create-page">
+        <div class="container container-md">
+            <div class="dashboard-header animate-fade-in">
+                <h1 class="dashboard-title">Enforced <span class="text-gradient">Attestation</span></h1>
+            </div>
+
+            <!-- Preamble -->
+            <div class="preamble-box animate-fade-in">
+                <p class="preamble-lead">This is a closing room, not a negotiation table.</p>
+                <p class="preamble-body">
+                    Enforced mode is designed for deals that have <strong>ALREADY been agreed in principle</strong>.
+                    Both parties arrive ready to formalize terms, review final documents, and commit.
+                </p>
+                <p class="preamble-body">
+                    If you're still negotiating price, scope, or key terms &mdash; do that first.
+                    Come back when you're ready to close.
+                </p>
+                <div class="preamble-why">
+                    <strong>Why attest a closed deal?</strong>
+                    <ul>
+                        <li>Creates permanent proof both parties agreed</li>
+                        <li>Eliminates "that's not what we agreed to" disputes</li>
+                        <li>Professional documentation of the transaction</li>
+                        <li>Good business practice, not paranoia</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="create-form" class="enforced-form animate-fade-in" onsubmit="handleCreateSession(event)">
+                <!-- Session Details -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Session Details</h3>
+
+                    <div class="form-group">
+                        <label class="form-label" for="title">Title</label>
+                        <input
+                            type="text"
+                            id="title"
+                            name="title"
+                            class="form-input"
+                            placeholder="e.g., Property Sale Agreement"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="description">Description (optional)</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            class="form-input"
+                            placeholder="Brief description of this agreement..."
+                            rows="3"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- Counterparty -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Counterparty</h3>
+
+                    <div class="form-group">
+                        <label class="form-label" for="counterparty-email">Email</label>
+                        <input
+                            type="email"
+                            id="counterparty-email"
+                            name="counterparty_email"
+                            class="form-input"
+                            placeholder="counterparty@example.com"
+                            required
+                        >
+                        <span class="form-hint">They'll receive an invitation with a verification code</span>
+                    </div>
+                </div>
+
+                <!-- Review Period -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Review Period</h3>
+                    <p class="form-hint mb-md">How long both parties have to review and agree</p>
+
+                    <div class="review-period-options">
+                        <label class="radio-card">
+                            <input type="radio" name="review_period" value="24" />
+                            <span class="radio-card-content">
+                                <span class="radio-card-title">24 hours</span>
+                            </span>
+                        </label>
+
+                        <label class="radio-card">
+                            <input type="radio" name="review_period" value="48" />
+                            <span class="radio-card-content">
+                                <span class="radio-card-title">48 hours</span>
+                            </span>
+                        </label>
+
+                        <label class="radio-card">
+                            <input type="radio" name="review_period" value="72" checked />
+                            <span class="radio-card-content">
+                                <span class="radio-card-title">72 hours</span>
+                                <span class="radio-card-badge">Default</span>
+                            </span>
+                        </label>
+
+                        <label class="radio-card">
+                            <input type="radio" name="review_period" value="168" />
+                            <span class="radio-card-content">
+                                <span class="radio-card-title">7 days</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Document Upload -->
+                <div class="form-section">
+                    <h3 class="form-section-title">Your Documents</h3>
+
+                    <div id="file-drop-zone" class="file-drop-zone">
+                        <input type="file" id="file-input" multiple style="display: none;" onchange="handleFileSelect(event)">
+                        <div class="drop-zone-content" id="drop-zone-content">
+                            <div class="drop-zone-icon">&#128196;</div>
+                            <div class="drop-zone-text">
+                                <strong>Drag files here or click to browse</strong>
+                                <span>Max 10 files, 50MB each</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="file-list" class="file-list"></div>
+                </div>
+
+                <!-- Summary -->
+                <div class="summary-card">
+                    <div class="summary-row">
+                        <span class="text-muted">Cost</span>
+                        <span class="summary-value">12 credits <span class="text-muted">(held until completion)</span></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="text-muted">Your balance</span>
+                        <span id="credit-balance" class="summary-value">-- credits</span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-ghost" onclick="window.location.href='index.html'">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+                        Create &amp; Send Invitation
+                    </button>
+                </div>
+
+                <div id="create-error" class="form-hint form-error hidden mt-md"></div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .preamble-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-cyan);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .preamble-lead {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .preamble-body {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .preamble-body strong {
+            color: var(--text-primary);
+        }
+
+        .preamble-why {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+
+        .preamble-why strong {
+            color: var(--accent-cyan);
+            display: block;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .preamble-why ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .preamble-why li {
+            color: var(--text-secondary);
+            padding: var(--spacing-xs) 0;
+            padding-left: var(--spacing-lg);
+            position: relative;
+        }
+
+        .preamble-why li::before {
+            content: "•";
+            color: var(--accent-cyan);
+            position: absolute;
+            left: 0;
+        }
+
+        .enforced-form {
+            margin-top: var(--spacing-xl);
+        }
+
+        .form-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-section-title {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .review-period-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+        }
+
+        @media (max-width: 768px) {
+            .review-period-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .radio-card {
+            display: block;
+            cursor: pointer;
+        }
+
+        .radio-card input {
+            display: none;
+        }
+
+        .radio-card-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-lg) var(--spacing-md);
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            text-align: center;
+        }
+
+        .radio-card input:checked + .radio-card-content {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .radio-card:hover .radio-card-content {
+            border-color: var(--border-hover);
+        }
+
+        .radio-card-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .radio-card-badge {
+            font-size: 0.7rem;
+            color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            margin-top: var(--spacing-xs);
+        }
+
+        .file-drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-2xl);
+            text-align: center;
+            transition: all var(--transition-fast);
+            background: var(--bg-primary);
+            cursor: pointer;
+        }
+
+        .file-drop-zone:hover,
+        .file-drop-zone.drag-over {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+
+        .drop-zone-text {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .drop-zone-text strong {
+            color: var(--text-primary);
+        }
+
+        .drop-zone-text span {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .file-list {
+            margin-top: var(--spacing-md);
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .file-item-icon {
+            font-size: 1.5rem;
+        }
+
+        .file-item-details {
+            flex: 1;
+        }
+
+        .file-item-name {
+            color: var(--text-primary);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .file-item-size {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .file-item-remove {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.25rem;
+            padding: var(--spacing-xs);
+            transition: color var(--transition-fast);
+        }
+
+        .file-item-remove:hover {
+            color: var(--error);
+        }
+
+        .file-item-status {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+        }
+
+        .file-item-status.hashing {
+            color: var(--warning);
+            background: rgba(255, 170, 0, 0.1);
+        }
+
+        .file-item-status.ready {
+            color: var(--success);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .summary-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) 0;
+        }
+
+        .summary-row:not(:last-child) {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-value {
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-xl);
+        }
+
+        .insufficient-credits {
+            color: var(--error);
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        const MAX_FILES = 10;
+        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+        let selectedFiles = [];
+
+        // Check authentication and load data
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '../login.html?redirect=' + encodeURIComponent('/enforced/new.html');
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            // Load credit balance
+            try {
+                const response = await fetchWithAuth('/credits/balance');
+                const balance = response.credits || 0;
+                const balanceEl = document.getElementById('credit-balance');
+                balanceEl.textContent = `${balance} credits`;
+
+                if (balance < 12) {
+                    balanceEl.classList.add('insufficient-credits');
+                    document.getElementById('submit-btn').disabled = true;
+                    document.getElementById('submit-btn').textContent = 'Insufficient Credits';
+                }
+            } catch (error) {
+                console.error('Failed to load credit balance:', error);
+                document.getElementById('credit-balance').textContent = '-- credits';
+            }
+
+            // Setup drag-drop handlers
+            setupFileDropZone();
+        });
+
+        function setupFileDropZone() {
+            const dropZone = document.getElementById('file-drop-zone');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+            });
+
+            dropZone.addEventListener('drop', handleDrop, false);
+            dropZone.addEventListener('click', () => document.getElementById('file-input').click());
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            const files = Array.from(e.dataTransfer.files);
+            addFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addFiles(files);
+            e.target.value = ''; // Reset input
+        }
+
+        async function addFiles(newFiles) {
+            for (const file of newFiles) {
+                if (selectedFiles.length >= MAX_FILES) {
+                    showToast(`Maximum ${MAX_FILES} files allowed`, 'error');
+                    break;
+                }
+
+                if (file.size > MAX_FILE_SIZE) {
+                    showToast(`${file.name} exceeds 50MB limit`, 'error');
+                    continue;
+                }
+
+                // Check for duplicate
+                if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    showToast(`${file.name} already added`, 'error');
+                    continue;
+                }
+
+                const fileEntry = {
+                    file,
+                    name: file.name,
+                    size: file.size,
+                    hash: null,
+                    status: 'hashing'
+                };
+
+                selectedFiles.push(fileEntry);
+                renderFileList();
+
+                // Compute hash
+                try {
+                    fileEntry.hash = await computeSHA256(file);
+                    fileEntry.status = 'ready';
+                } catch (error) {
+                    fileEntry.status = 'error';
+                    showToast(`Failed to hash ${file.name}`, 'error');
+                }
+                renderFileList();
+            }
+        }
+
+        async function computeSHA256(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFileList();
+        }
+
+        function renderFileList() {
+            const container = document.getElementById('file-list');
+
+            if (selectedFiles.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = selectedFiles.map((f, i) => `
+                <div class="file-item">
+                    <span class="file-item-icon">&#128196;</span>
+                    <div class="file-item-details">
+                        <div class="file-item-name">${escapeHtml(f.name)}</div>
+                        <div class="file-item-size">${formatFileSize(f.size)}</div>
+                    </div>
+                    <span class="file-item-status ${f.status}">${f.status === 'hashing' ? 'Hashing...' : f.status === 'ready' ? 'Ready' : 'Error'}</span>
+                    <button type="button" class="file-item-remove" onclick="removeFile(${i})">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        async function handleCreateSession(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const submitBtn = document.getElementById('submit-btn');
+            const errorDiv = document.getElementById('create-error');
+
+            // Validate
+            const title = form.title.value.trim();
+            const counterpartyEmail = form.counterparty_email.value.trim();
+            const reviewPeriod = form.querySelector('input[name="review_period"]:checked')?.value || '72';
+
+            if (!title) {
+                showToast('Please enter a session title', 'error');
+                return;
+            }
+
+            if (!counterpartyEmail) {
+                showToast('Please enter counterparty email', 'error');
+                return;
+            }
+
+            // Check if any files are still hashing
+            if (selectedFiles.some(f => f.status === 'hashing')) {
+                showToast('Please wait for files to finish hashing', 'error');
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+
+            try {
+                // Create session
+                const sessionResponse = await fetchWithAuth('/enforced/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title,
+                        description: form.description.value.trim() || null,
+                        counterparty_email: counterpartyEmail,
+                        review_period_hours: parseInt(reviewPeriod),
+                    }),
+                });
+
+                const sessionId = sessionResponse.id || sessionResponse.session?.id;
+
+                // Upload files if any
+                for (const fileEntry of selectedFiles.filter(f => f.status === 'ready')) {
+                    try {
+                        await uploadFile(sessionId, fileEntry.file);
+                    } catch (error) {
+                        console.error('Failed to upload file:', fileEntry.name, error);
+                        showToast(`Failed to upload ${fileEntry.name}`, 'error');
+                    }
+                }
+
+                showToast('Session created! Invitation sent.', 'success');
+
+                // Redirect to session workspace
+                setTimeout(() => {
+                    window.location.href = `session.html?id=${sessionId}`;
+                }, 1000);
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create & Send Invitation';
+            }
+        }
+
+        async function uploadFile(sessionId, file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_name', file.name);
+            formData.append('file_size', file.size);
+            formData.append('mime_type', file.type || 'application/octet-stream');
+
+            const response = await fetch(`${API_BASE}/enforced/sessions/${sessionId}/documents`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Upload failed');
+            }
+
+            return response.json();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        }
+
+        function toggleMobileNav() {
+            document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+    </script>
+</body>
+</html>

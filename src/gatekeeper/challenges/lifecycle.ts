@@ -1,11 +1,12 @@
 
-import { execute } from '../../db';
+import { execute, queryOne } from '../../db';
 import { createError } from '../../errors';
 import { validateTransition } from './transitions';
 import { getChallengeById } from './create';
 import { runGatekeeperVerification } from './verification';
 import { emitEvent } from '../../relay';
 import { markCounterpartyAccepted, getCoinToss } from '../../coin-toss';
+import { sendFireNotification, generateAcceptToken, generateDownloadToken } from '../../email';
 import type { Challenge, ChallengeStatus, AcceptChallengeInput } from './types';
 import { Env } from '../../types';
 
@@ -26,8 +27,65 @@ export async function sendChallenge(
 
     await transitionStatus(env, challenge, 'AWAITING_COUNTERPARTY');
 
+    // For Fire mode with counterparty email, send notification
+    if (challenge.mode === 'FIRE' && challenge.counterparty_email) {
+        await sendFireModeNotification(env, challenge, userId);
+    }
+
     const updated = await getChallengeById(env, challengeId);
     return updated!;
+}
+
+/**
+ * Send Fire mode email notification to counterparty
+ */
+async function sendFireModeNotification(
+    env: Env,
+    challenge: Challenge,
+    creatorUserId: string
+): Promise<void> {
+    // Get creator's email/name for display
+    const creator = await queryOne<{ email: string; display_name?: string }>(
+        env.TATTLEHASH_DB,
+        'SELECT email, display_name FROM users WHERE id = ?',
+        [creatorUserId]
+    );
+
+    const initiatorName = creator?.display_name || creator?.email || 'Someone';
+
+    // Generate secure accept token
+    const acceptToken = await generateAcceptToken(env, challenge.id, challenge.counterparty_email!);
+
+    // Generate download token if challenge has content
+    let downloadUrl: string | undefined;
+    if (challenge.content_hash) {
+        const downloadToken = await generateDownloadToken(env, challenge.id);
+        downloadUrl = `https://api.tattlehash.com/challenges/${challenge.id}/download?token=${downloadToken}`;
+    }
+
+    // Send the notification email
+    const result = await sendFireNotification(env, {
+        counterpartyEmail: challenge.counterparty_email!,
+        challengeId: challenge.id,
+        title: challenge.title,
+        description: challenge.description,
+        customNote: challenge.custom_note,
+        initiatorName,
+        acceptToken,
+        expiresAt: challenge.expires_at,
+        includeDownloadLink: !!challenge.content_hash,
+        downloadUrl,
+    });
+
+    if (!result.ok) {
+        console.error(JSON.stringify({
+            t: Date.now(),
+            at: 'fire_notification_failed',
+            challenge_id: challenge.id,
+            error: result.error,
+        }));
+        // Don't throw - the challenge was still sent, email delivery is best-effort
+    }
 }
 
 export async function acceptChallenge(

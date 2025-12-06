@@ -8,6 +8,16 @@
 import { z } from 'zod';
 
 // ============================================================================
+// Beta Limits - must be defined before schemas that reference them
+// ============================================================================
+
+export const BETA_LIMITS = {
+    MAX_TRANSACTION_USD: 1000,          // $1,000 max per enforced transaction
+    MAX_CREDITS_PER_PURCHASE: 25,       // 25 credits max per purchase
+    MAX_ATTESTATIONS_PER_DAY: 10,       // 10 attestations per user per day
+} as const;
+
+// ============================================================================
 // Stake Status
 // ============================================================================
 
@@ -265,13 +275,6 @@ export const ENFORCED_DEFAULTS = {
     RESPONSE_TIMEOUT_SECONDS: 86400,    // 24 hours
     DISPUTE_TIMEOUT_SECONDS: 259200,    // 72 hours
     REQUIRED_CONFIRMATIONS: 12,
-} as const;
-
-// Beta limits - transaction value caps
-export const BETA_LIMITS = {
-    MAX_TRANSACTION_USD: 1000,          // $1,000 max per enforced transaction
-    MAX_CREDITS_PER_PURCHASE: 25,       // 25 credits max per purchase
-    MAX_ATTESTATIONS_PER_DAY: 10,       // 10 attestations per user per day
 } as const;
 
 export const TIMEOUT_CONSTRAINTS = {

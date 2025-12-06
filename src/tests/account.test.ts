@@ -719,6 +719,8 @@ describe('GET /auth/me', () => {
         vi.mocked(authenticateRequest).mockResolvedValue({
             ok: false,
             error: {
+                name: 'AppError',
+                message: 'Unauthorized',
                 status: 401,
                 code: 'UNAUTHORIZED',
                 details: { reason: 'No token' },
@@ -911,6 +913,8 @@ describe('POST /auth/logout', () => {
         vi.mocked(authenticateRequest).mockResolvedValue({
             ok: false,
             error: {
+                name: 'AppError',
+                message: 'Unauthorized',
                 status: 401,
                 code: 'UNAUTHORIZED',
                 details: { reason: 'No token' },

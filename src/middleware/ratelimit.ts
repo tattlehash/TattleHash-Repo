@@ -29,6 +29,12 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
 
     // Beta limits - daily attestation cap (10 per day per user/IP)
     'attestation_daily': { maxRequests: 10, windowSeconds: 86400, keyPrefix: 'rl:attest:daily' },
+
+    // Verification endpoints - 10/hour per IP
+    'verify_ip': { maxRequests: 10, windowSeconds: 3600, keyPrefix: 'rl:verify:ip' },
+
+    // Verification by attestation ID - 50/day per attestation ID
+    'verify_attestation': { maxRequests: 50, windowSeconds: 86400, keyPrefix: 'rl:verify:att' },
 };
 
 export async function checkRateLimit(
@@ -357,6 +363,141 @@ export async function checkLoginRateLimit(
         env.GATE_KV.put(emailKey, JSON.stringify(emailRequests), { expirationTtl: config.windowSeconds }),
         env.GATE_KV.put(ipKey, JSON.stringify(ipRequests), { expirationTtl: config.windowSeconds }),
     ]);
+
+    return { ok: true };
+}
+
+/**
+ * Check rate limit for verification endpoints.
+ * Combines IP-based (10/hour) and attestation-ID-based (50/day) limits.
+ */
+export async function checkVerificationRateLimit(
+    request: Request,
+    env: Env,
+    attestationId?: string
+): Promise<{ ok: true } | { ok: false; response: Response }> {
+    const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const now = Date.now();
+
+    // Check IP-based limit (10/hour)
+    const ipConfig = RATE_LIMITS['verify_ip'];
+    const ipKey = `${ipConfig.keyPrefix}:${clientIp}`;
+    const ipWindowStart = now - (ipConfig.windowSeconds * 1000);
+
+    const ipStored = await env.GATE_KV.get(ipKey);
+    let ipRequests: number[] = [];
+    if (ipStored) {
+        try {
+            ipRequests = JSON.parse(ipStored);
+        } catch (e) {
+            console.error(JSON.stringify({
+                t: Date.now(),
+                at: 'rate_limit_parse_error_verify_ip',
+                key: ipKey,
+                error: String(e),
+            }));
+            await env.GATE_KV.delete(ipKey);
+        }
+    }
+    ipRequests = ipRequests.filter(ts => ts > ipWindowStart);
+
+    if (ipRequests.length >= ipConfig.maxRequests) {
+        const oldestRequest = Math.min(...ipRequests);
+        const retryAfter = Math.ceil((oldestRequest + (ipConfig.windowSeconds * 1000) - now) / 1000);
+        const retryMinutes = Math.ceil(retryAfter / 60);
+
+        console.error(JSON.stringify({
+            t: Date.now(),
+            at: 'verify_ip_rate_limit_exceeded',
+            ip: clientIp,
+            requests_count: ipRequests.length,
+        }));
+
+        return {
+            ok: false,
+            response: new Response(
+                JSON.stringify({
+                    error: 'RATE_LIMIT_EXCEEDED',
+                    message: `You've reached the verification limit (10 per hour). Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.`,
+                    retry_after: retryAfter,
+                }),
+                {
+                    status: 429,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Retry-After': retryAfter.toString(),
+                        'X-RateLimit-Limit': ipConfig.maxRequests.toString(),
+                        'X-RateLimit-Remaining': '0',
+                    },
+                }
+            ),
+        };
+    }
+
+    // Check attestation-ID-based limit (50/day) if provided
+    if (attestationId) {
+        const attConfig = RATE_LIMITS['verify_attestation'];
+        const attKey = `${attConfig.keyPrefix}:${attestationId}`;
+        const attWindowStart = now - (attConfig.windowSeconds * 1000);
+
+        const attStored = await env.GATE_KV.get(attKey);
+        let attRequests: number[] = [];
+        if (attStored) {
+            try {
+                attRequests = JSON.parse(attStored);
+            } catch (e) {
+                console.error(JSON.stringify({
+                    t: Date.now(),
+                    at: 'rate_limit_parse_error_verify_att',
+                    key: attKey,
+                    error: String(e),
+                }));
+                await env.GATE_KV.delete(attKey);
+            }
+        }
+        attRequests = attRequests.filter(ts => ts > attWindowStart);
+
+        if (attRequests.length >= attConfig.maxRequests) {
+            const oldestRequest = Math.min(...attRequests);
+            const retryAfter = Math.ceil((oldestRequest + (attConfig.windowSeconds * 1000) - now) / 1000);
+            const retryHours = Math.ceil(retryAfter / 3600);
+
+            console.error(JSON.stringify({
+                t: Date.now(),
+                at: 'verify_attestation_rate_limit_exceeded',
+                attestation_id: attestationId,
+                requests_count: attRequests.length,
+            }));
+
+            return {
+                ok: false,
+                response: new Response(
+                    JSON.stringify({
+                        error: 'RATE_LIMIT_EXCEEDED',
+                        message: `This attestation has reached its daily verification limit (50 per day). Please try again in ${retryHours} hour${retryHours > 1 ? 's' : ''}.`,
+                        retry_after: retryAfter,
+                    }),
+                    {
+                        status: 429,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Retry-After': retryAfter.toString(),
+                            'X-RateLimit-Limit': attConfig.maxRequests.toString(),
+                            'X-RateLimit-Remaining': '0',
+                        },
+                    }
+                ),
+            };
+        }
+
+        // Record this verification against attestation ID
+        attRequests.push(now);
+        await env.GATE_KV.put(attKey, JSON.stringify(attRequests), { expirationTtl: attConfig.windowSeconds });
+    }
+
+    // Record this verification against IP
+    ipRequests.push(now);
+    await env.GATE_KV.put(ipKey, JSON.stringify(ipRequests), { expirationTtl: ipConfig.windowSeconds });
 
     return { ok: true };
 }

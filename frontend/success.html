@@ -503,8 +503,8 @@
                     </div>
 
                     <div class="panel-actions">
-                        <a href="#" class="btn btn-ghost" id="download-pdf-btn" style="display: none;">
-                            <span>&#128196;</span> Download PDF
+                        <a href="#" class="btn btn-primary" id="download-pdf-btn">
+                            <span>&#128196;</span> Download Proof PDF
                         </a>
                         <button class="btn btn-ghost" onclick="shareAttestation()">
                             <span>&#128279;</span> Share
@@ -710,11 +710,55 @@
                 // Check for pending attestation data
                 const pending = localStorage.getItem('pendingAttestation');
                 if (pending) {
-                    // Show loading state
-                    showToast('Creating your attestation...', 'info');
+                    await createPendingAttestation(pending);
                 }
             }
         });
+
+        async function createPendingAttestation(pendingJson) {
+            try {
+                const pendingData = JSON.parse(pendingJson);
+                showToast('Creating your attestation...', 'info');
+
+                // Create the challenge/attestation
+                const response = await fetch(`${API_BASE}/challenges`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        mode: pendingData.mode,
+                        title: pendingData.description?.substring(0, 200) || 'Attestation',
+                        description: pendingData.description,
+                        content_hash: pendingData.content_hash,
+                        file_name: pendingData.file_name,
+                        file_size: pendingData.file_size,
+                        counterparty_email: pendingData.counterparty_email,
+                        counterparty_user_id: pendingData.counterparty_wallet,
+                        fee_arrangement: pendingData.fee_arrangement,
+                        coin_toss_call: pendingData.coin_toss_call,
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Clear pending data
+                    localStorage.removeItem('pendingAttestation');
+
+                    // Load and display the created challenge
+                    await loadChallenge(data.id);
+                    showToast('Attestation created successfully!', 'success');
+                } else {
+                    console.error('Failed to create attestation:', data);
+                    showToast(data.message || 'Failed to create attestation', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating attestation:', error);
+                showToast('Error creating attestation', 'error');
+            }
+        }
 
         async function loadAttestation(id) {
             try {
@@ -762,6 +806,7 @@
                     status: challenge.status,
                     created_at: challenge.created_at,
                     content_hash: challenge.content_hash,
+                    receipt_id: challenge.receipt_id,
                 },
                 blockchain: challenge.anchor_tx_hash ? {
                     network: 'polygon',
@@ -769,7 +814,7 @@
                     block_number: challenge.anchor_block_number,
                     explorer_url: `https://polygonscan.com/tx/${challenge.anchor_tx_hash}`,
                 } : null,
-                cosigner: challenge.counterparty_email || truncateAddress(challenge.counterparty_wallet),
+                cosigner: challenge.counterparty_email || truncateAddress(challenge.counterparty_user_id),
                 fee_arrangement: challenge.fee_arrangement,
                 coin_toss: challenge.fee_arrangement === 'coin_toss' ? {
                     used: true,
@@ -835,6 +880,13 @@
                     feeText += ` (${data.coin_toss.result?.toUpperCase()} - ${data.coin_toss.sponsor} sponsors)`;
                 }
                 document.getElementById('att-fee').textContent = feeText;
+            }
+
+            // Set PDF download link
+            const pdfBtn = document.getElementById('download-pdf-btn');
+            if (att.id) {
+                pdfBtn.href = `${API_BASE}/challenges/${att.id}/export/pdf?intent=evidence`;
+                pdfBtn.target = '_blank';
             }
         }
 

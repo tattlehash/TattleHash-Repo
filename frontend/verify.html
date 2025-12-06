@@ -346,6 +346,60 @@
             0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); }
             50% { box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.3); }
         }
+
+        /* CTA Banner */
+        .cta-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.15) 0%, rgba(0, 212, 255, 0.15) 100%);
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-top: 24px;
+        }
+        .cta-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        .cta-content {
+            flex: 1;
+        }
+        .cta-text {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 15px;
+            margin: 0 0 4px;
+        }
+        .cta-subtext {
+            color: var(--accent-cyan);
+            font-size: 14px;
+            margin: 0;
+        }
+        .btn-cta {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-cyan) 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+        }
+        @media (max-width: 600px) {
+            .cta-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+            .btn-cta {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -551,6 +605,16 @@
                         Even if we disappear, the blockchain record remains.<br>
                         <a href="#" target="_blank" id="polygonscan-link">Verify directly on PolygonScan &#8594;</a>
                     </p>
+                </div>
+
+                <!-- Soft CTA -->
+                <div class="cta-banner" id="cta-banner">
+                    <div class="cta-icon">&#128737;</div>
+                    <div class="cta-content">
+                        <p class="cta-text">Need proof for your own transactions?</p>
+                        <p class="cta-subtext">Your first attestation is free.</p>
+                    </div>
+                    <a href="register.html" class="btn btn-cta">Get Started</a>
                 </div>
 
                 <!-- Action Buttons -->

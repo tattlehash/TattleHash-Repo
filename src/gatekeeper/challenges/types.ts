@@ -21,8 +21,18 @@ export interface Challenge {
     mode: ChallengeMode;
     creator_user_id: string;
     counterparty_user_id?: string;
+    /** Counterparty email for Fire mode notifications */
+    counterparty_email?: string;
+    /** Custom note from initiator to counterparty */
+    custom_note?: string;
     title: string;
     description?: string;
+    /** SHA-256 hash of the uploaded evidence document */
+    content_hash?: string;
+    /** Original filename of uploaded document (for display only) */
+    file_name?: string;
+    /** File size in bytes */
+    file_size?: number;
     status: ChallengeStatus;
     expires_at?: string;
     intent_locked_at?: number;
@@ -31,6 +41,12 @@ export interface Challenge {
     updated_at: number;
     /** Fee arrangement for Gatekeeper/Enforced modes */
     fee_arrangement?: FeeArrangement;
+    /** Link to attestation receipt in KV storage */
+    receipt_id?: string;
+    /** Blockchain transaction hash once anchored */
+    anchor_tx_hash?: string;
+    /** Block number where anchoring was confirmed */
+    anchor_block_number?: number;
 }
 
 export interface GatekeeperRequirement {
@@ -48,7 +64,17 @@ export interface CreateChallengeInput {
     mode: ChallengeMode;
     title: string;
     description?: string;
+    /** SHA-256 hash of the evidence document (computed client-side) */
+    content_hash?: string;
+    /** Original filename for display purposes */
+    file_name?: string;
+    /** File size in bytes */
+    file_size?: number;
     counterparty_user_id?: string;
+    /** Counterparty email for notification (Fire mode) */
+    counterparty_email?: string;
+    /** Custom note from initiator to counterparty */
+    custom_note?: string;
     expires_at?: string;
     gatekeeper_requirements?: {
         creator?: GatekeeperRequirement;

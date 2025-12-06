@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Gatekeeper Session - TattleHash</title>
+    <meta name="description" content="Create a new Gatekeeper verification session.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="index.html" class="active">Gatekeeper</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="new-session-page">
+        <div class="container">
+            <div class="new-session-container animate-fade-in">
+                <a href="index.html" class="back-link">&larr; Back to Gatekeeper</a>
+
+                <h1 class="page-title">New <span class="text-gradient">Session</span></h1>
+                <p class="page-subtitle">Invite someone to verify themselves through Gatekeeper.</p>
+
+                <!-- Your Badge Status -->
+                <div id="your-status" class="your-status-card">
+                    <!-- Filled by JS -->
+                </div>
+
+                <!-- Session Form -->
+                <form id="session-form" class="session-form" onsubmit="createSession(event)">
+                    <!-- Profile Selection -->
+                    <div class="form-section">
+                        <label class="form-label">Verification Profile</label>
+                        <p class="form-hint">What checks should the counterparty complete?</p>
+                        <select id="profile-select" class="form-select" required>
+                            <option value="">Select a profile...</option>
+                        </select>
+                    </div>
+
+                    <!-- Counterparty Email -->
+                    <div class="form-section">
+                        <label class="form-label" for="counterparty-email">Counterparty Email *</label>
+                        <p class="form-hint">They will receive a verification link at this address.</p>
+                        <input type="email" id="counterparty-email" class="form-input" placeholder="counterparty@example.com" required>
+                    </div>
+
+                    <!-- Session Title -->
+                    <div class="form-section">
+                        <label class="form-label" for="session-title">Session Title (Optional)</label>
+                        <p class="form-hint">A friendly name to identify this session.</p>
+                        <input type="text" id="session-title" class="form-input" placeholder="e.g., NFT Trade with Alice" maxlength="200">
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-section">
+                        <label class="form-label" for="session-description">Description (Optional)</label>
+                        <p class="form-hint">Additional context shown to the counterparty.</p>
+                        <textarea id="session-description" class="form-textarea" placeholder="Describe the purpose of this verification..." maxlength="2000" rows="3"></textarea>
+                    </div>
+
+                    <!-- Advanced Options (Collapsed by Default) -->
+                    <details class="advanced-options">
+                        <summary>Advanced Options</summary>
+
+                        <div class="form-section">
+                            <label class="form-label" for="required-chain">Required Chain</label>
+                            <select id="required-chain" class="form-select">
+                                <option value="">Any chain</option>
+                                <option value="ethereum">Ethereum</option>
+                                <option value="polygon">Polygon</option>
+                                <option value="base">Base</option>
+                            </select>
+                        </div>
+
+                        <div class="form-section">
+                            <label class="form-label" for="required-balance">Required Balance (Wei)</label>
+                            <input type="text" id="required-balance" class="form-input" placeholder="0">
+                            <p class="form-hint" id="balance-display"></p>
+                        </div>
+
+                        <div class="form-section">
+                            <label class="form-label" for="content-hash">Associated Content Hash</label>
+                            <input type="text" id="content-hash" class="form-input" placeholder="SHA-256 hash of associated document">
+                        </div>
+                    </details>
+
+                    <!-- Submit -->
+                    <div class="form-actions">
+                        <button type="submit" id="submit-btn" class="btn btn-primary btn-lg">
+                            Create Session & Send Invite
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .new-session-page {
+            padding: var(--spacing-xl) 0;
+            min-height: 100vh;
+        }
+
+        .new-session-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .back-link:hover {
+            color: var(--accent-cyan);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        /* Your Status Card */
+        .your-status-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .your-status-card.has-badge {
+            border-color: var(--success);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .your-status-card.no-badge {
+            border-color: var(--warning);
+            background: rgba(255, 170, 0, 0.05);
+        }
+
+        .status-icon {
+            font-size: 32px;
+        }
+
+        .status-text {
+            flex: 1;
+        }
+
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .status-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Form */
+        .session-form {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+        }
+
+        .form-section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color var(--transition-fast);
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Advanced Options */
+        .advanced-options {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .advanced-options summary {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .advanced-options[open] summary {
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Form Actions */
+        .form-actions {
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-actions .btn {
+            width: 100%;
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let verification = null;
+        let profiles = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '../login.html?redirect=' + encodeURIComponent('/gatekeeper/new.html');
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            await loadData();
+        });
+
+        async function loadData() {
+            try {
+                // Load verification status
+                const verifyResponse = await fetchWithAuth('/gatekeeper/verification');
+                verification = verifyResponse.verification;
+
+                if (!verification || verification.status !== 'COMPLETED') {
+                    showToast('You need to complete verification first', 'warning');
+                    window.location.href = 'verify.html';
+                    return;
+                }
+
+                showYourStatus();
+
+                // Load profiles
+                const profilesResponse = await fetchWithAuth('/gatekeeper/profiles');
+                profiles = profilesResponse.profiles || [];
+
+                const select = document.getElementById('profile-select');
+                profiles.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    select.appendChild(option);
+                });
+
+                // Pre-select user's profile
+                if (verification.profile_id) {
+                    select.value = verification.profile_id;
+                }
+
+            } catch (error) {
+                if (error.message.includes('Session expired')) return;
+                showToast(error.message, 'error');
+            }
+        }
+
+        function showYourStatus() {
+            const card = document.getElementById('your-status');
+            const hasBadge = verification.badge_granted;
+
+            card.classList.remove('has-badge', 'no-badge');
+            card.classList.add(hasBadge ? 'has-badge' : 'no-badge');
+
+            card.innerHTML = `
+                <div class="status-icon">${hasBadge ? '&#10004;' : '&#9888;&#65039;'}</div>
+                <div class="status-text">
+                    <div class="status-title">Your Status: ${hasBadge ? 'Verified with Badge' : 'Verified (No Badge)'}</div>
+                    <div class="status-subtitle">
+                        ${hasBadge
+                            ? 'Counterparty will see your badge during verification.'
+                            : 'Counterparty will see you are verified but without a badge.'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Balance display helper
+        document.getElementById('required-balance').addEventListener('input', function(e) {
+            const wei = e.target.value;
+            if (wei && !isNaN(wei)) {
+                const eth = parseFloat(wei) / 1e18;
+                document.getElementById('balance-display').textContent = `≈ ${eth.toFixed(6)} ETH`;
+            } else {
+                document.getElementById('balance-display').textContent = '';
+            }
+        });
+
+        async function createSession(e) {
+            e.preventDefault();
+
+            const profileId = document.getElementById('profile-select').value;
+            const counterpartyEmail = document.getElementById('counterparty-email').value;
+            const title = document.getElementById('session-title').value;
+            const description = document.getElementById('session-description').value;
+            const requiredChain = document.getElementById('required-chain').value;
+            const requiredBalance = document.getElementById('required-balance').value;
+            const contentHash = document.getElementById('content-hash').value;
+
+            if (!profileId || !counterpartyEmail) {
+                showToast('Please fill in required fields', 'error');
+                return;
+            }
+
+            try {
+                setButtonLoading('submit-btn', true);
+
+                const payload = {
+                    profile_id: profileId,
+                    counterparty_email: counterpartyEmail,
+                };
+
+                if (title) payload.title = title;
+                if (description) payload.description = description;
+                if (requiredChain) payload.required_chain = requiredChain;
+                if (requiredBalance) payload.required_balance = requiredBalance;
+                if (contentHash) payload.content_hash = contentHash;
+
+                const response = await postWithAuth('/gatekeeper/sessions', payload);
+
+                showToast('Session created! Invitation sent.', 'success');
+                window.location.href = `session.html?id=${response.session.id}`;
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                setButtonLoading('submit-btn', false, 'Create Session & Send Invite');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gatekeeper - TattleHash</title>
+    <meta name="description" content="Mutual verification with privacy-respecting asymmetry.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="../dashboard.html">Dashboard</a></li>
+                <li><a href="index.html" class="active">Gatekeeper</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <span id="user-email" class="text-muted" style="margin-right: 16px;"></span>
+                <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+            </div>
+
+            <div class="nav-toggle" onclick="toggleMobileNav()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="gatekeeper-page">
+        <div class="container">
+            <!-- Header with Verification Status -->
+            <div class="page-header animate-fade-in">
+                <div class="header-content">
+                    <h1 class="page-title">Gatekeeper <span class="text-gradient">Mode</span></h1>
+                    <p class="page-subtitle">Mutual verification with privacy-respecting asymmetry</p>
+                </div>
+                <div id="header-action"></div>
+            </div>
+
+            <!-- Verification Status Card -->
+            <div id="verification-status" class="verification-status-card animate-fade-in hidden">
+                <!-- Filled by JS -->
+            </div>
+
+            <!-- Not Verified State -->
+            <div id="not-verified-state" class="not-verified-card hidden">
+                <div class="lock-icon">&#128274;</div>
+                <h2>Verification Required</h2>
+                <p class="text-muted">Complete your verification to unlock Gatekeeper and start creating sessions.</p>
+                <a href="verify.html" class="btn btn-primary btn-lg mt-lg">Verify Yourself</a>
+            </div>
+
+            <!-- Verified State - Sessions List -->
+            <div id="verified-state" class="hidden">
+                <!-- Filter Tabs -->
+                <div class="filter-tabs animate-fade-in">
+                    <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">All</button>
+                    <button class="filter-tab" data-filter="active" onclick="setFilter('active')">Active</button>
+                    <button class="filter-tab" data-filter="completed" onclick="setFilter('completed')">Completed</button>
+                    <button class="filter-tab" data-filter="aborted" onclick="setFilter('aborted')">Aborted</button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading sessions...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state hidden">
+                    <div class="empty-icon">&#128101;</div>
+                    <h2>No Sessions Yet</h2>
+                    <p class="text-muted">Create your first Gatekeeper session to verify a counterparty.</p>
+                    <a href="new.html" class="btn btn-primary mt-lg">New Session</a>
+                </div>
+
+                <!-- Sessions List -->
+                <div id="sessions-list" class="sessions-list hidden"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .gatekeeper-page {
+            padding: var(--spacing-xl) 0;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+        }
+
+        /* Verification Status Card */
+        .verification-status-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+        }
+
+        .verification-status-card.has-badge {
+            border-color: var(--success);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .verification-status-card.no-badge {
+            border-color: var(--warning);
+            background: rgba(255, 170, 0, 0.05);
+        }
+
+        .badge-icon {
+            font-size: 48px;
+            flex-shrink: 0;
+        }
+
+        .badge-info {
+            flex: 1;
+        }
+
+        .badge-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .badge-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .badge-expires {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: var(--spacing-xs);
+        }
+
+        .badge-action {
+            flex-shrink: 0;
+        }
+
+        /* Not Verified State */
+        .not-verified-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-4xl);
+            text-align: center;
+        }
+
+        .lock-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+            opacity: 0.6;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: var(--spacing-md);
+        }
+
+        .filter-tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: var(--spacing-sm) var(--spacing-md);
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+        }
+
+        .filter-tab:hover {
+            color: var(--text-secondary);
+            background: var(--bg-surface);
+        }
+
+        .filter-tab.active {
+            color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* Loading & Empty States */
+        .loading-state, .empty-state {
+            text-align: center;
+            padding: var(--spacing-4xl);
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--spacing-lg);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+            opacity: 0.5;
+        }
+
+        /* Sessions List */
+        .sessions-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .session-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            transition: border-color var(--transition-fast);
+        }
+
+        .session-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .session-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .session-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .session-counterparty {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .status-indicator {
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-indicator.pending { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
+        .status-indicator.email_sent { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+        .status-indicator.code_verified { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+        .status-indicator.wallet_verified { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+        .status-indicator.checks_complete { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+        .status-indicator.completed { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .status-indicator.aborted, .status-indicator.expired { background: rgba(255, 68, 68, 0.2); color: var(--error); }
+
+        .session-meta {
+            display: flex;
+            gap: var(--spacing-lg);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .session-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .session-card.active-session {
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .session-card.completed-session {
+            border-left: 3px solid var(--success);
+        }
+
+        .session-card.aborted-session {
+            opacity: 0.7;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-muted);
+        }
+
+        /* Signal Summary Badges */
+        .signal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .signal-badge.clear {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--success);
+        }
+
+        .signal-badge.caution {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning);
+        }
+
+        .signal-badge.review {
+            background: rgba(255, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                gap: var(--spacing-lg);
+            }
+
+            .verification-status-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .filter-tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+            }
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let verification = null;
+        let allSessions = [];
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (!token) {
+                window.location.href = '../login.html?redirect=' + encodeURIComponent('/gatekeeper/index.html');
+                return;
+            }
+
+            document.getElementById('user-email').textContent = user.email || '';
+
+            await loadVerificationStatus();
+        });
+
+        async function loadVerificationStatus() {
+            try {
+                const response = await fetchWithAuth('/gatekeeper/verification');
+                verification = response.verification;
+
+                if (verification && verification.status === 'COMPLETED') {
+                    showVerifiedState();
+                } else if (verification && verification.status === 'IN_PROGRESS') {
+                    showInProgressState();
+                } else {
+                    showNotVerifiedState();
+                }
+            } catch (error) {
+                if (error.message.includes('Session expired')) return;
+                showNotVerifiedState();
+            }
+        }
+
+        function showNotVerifiedState() {
+            document.getElementById('not-verified-state').classList.remove('hidden');
+            document.getElementById('verified-state').classList.add('hidden');
+            document.getElementById('verification-status').classList.add('hidden');
+            document.getElementById('header-action').innerHTML = '';
+        }
+
+        function showInProgressState() {
+            document.getElementById('not-verified-state').classList.add('hidden');
+            document.getElementById('verified-state').classList.add('hidden');
+
+            const statusCard = document.getElementById('verification-status');
+            statusCard.classList.remove('hidden', 'has-badge', 'no-badge');
+            statusCard.classList.add('no-badge');
+            statusCard.innerHTML = `
+                <div class="badge-icon">&#9203;</div>
+                <div class="badge-info">
+                    <div class="badge-title">Verification In Progress</div>
+                    <div class="badge-subtitle">Complete your wallet verification to unlock Gatekeeper.</div>
+                </div>
+                <div class="badge-action">
+                    <a href="verify.html" class="btn btn-primary">Continue Verification</a>
+                </div>
+            `;
+            document.getElementById('header-action').innerHTML = '';
+        }
+
+        function showVerifiedState() {
+            document.getElementById('not-verified-state').classList.add('hidden');
+            document.getElementById('verified-state').classList.remove('hidden');
+
+            const hasBadge = verification.badge_granted;
+            const statusCard = document.getElementById('verification-status');
+            statusCard.classList.remove('hidden', 'has-badge', 'no-badge');
+            statusCard.classList.add(hasBadge ? 'has-badge' : 'no-badge');
+
+            const badgeIcon = hasBadge ? '&#10004;' : '&#9888;&#65039;';
+            const badgeTitle = hasBadge ? 'Verified with Badge' : 'Verified (No Badge)';
+            const badgeSubtitle = hasBadge
+                ? 'Your verification meets all badge criteria. Counterparties will see your badge.'
+                : `Signal: ${getSignalLabel(verification.signal_summary)}. You can still use Gatekeeper but won't display a badge.`;
+
+            const expiresAt = verification.expires_at ? new Date(verification.expires_at) : null;
+            const expiresText = expiresAt ? `Expires: ${expiresAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : '';
+
+            statusCard.innerHTML = `
+                <div class="badge-icon">${badgeIcon}</div>
+                <div class="badge-info">
+                    <div class="badge-title">${badgeTitle}</div>
+                    <div class="badge-subtitle">${badgeSubtitle}</div>
+                    ${expiresText ? `<div class="badge-expires">${expiresText}</div>` : ''}
+                </div>
+                <div class="badge-action">
+                    <a href="verify.html" class="btn btn-ghost btn-sm">View Details</a>
+                </div>
+            `;
+
+            document.getElementById('header-action').innerHTML = `
+                <a href="new.html" class="btn btn-primary">+ New Session</a>
+            `;
+
+            loadSessions();
+        }
+
+        async function loadSessions() {
+            try {
+                const response = await fetchWithAuth('/gatekeeper/sessions');
+                allSessions = response.sessions || [];
+
+                document.getElementById('loading-state').classList.add('hidden');
+
+                if (allSessions.length === 0) {
+                    document.getElementById('empty-state').classList.remove('hidden');
+                } else {
+                    document.getElementById('sessions-list').classList.remove('hidden');
+                    renderSessions();
+                }
+            } catch (error) {
+                document.getElementById('loading-state').innerHTML = `
+                    <div class="error-icon">&#9888;&#65039;</div>
+                    <p>Failed to load sessions: ${escapeHtml(error.message)}</p>
+                    <button class="btn btn-primary mt-lg" onclick="loadSessions()">Retry</button>
+                `;
+            }
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.filter === filter);
+            });
+            renderSessions();
+        }
+
+        function renderSessions() {
+            const filtered = filterSessions(allSessions, currentFilter);
+            const container = document.getElementById('sessions-list');
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="no-results">No ${currentFilter === 'all' ? '' : currentFilter} sessions found</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(session => renderSessionCard(session)).join('');
+        }
+
+        function filterSessions(sessions, filter) {
+            switch (filter) {
+                case 'active':
+                    return sessions.filter(s => !['COMPLETED', 'ABORTED', 'EXPIRED'].includes(s.status));
+                case 'completed':
+                    return sessions.filter(s => s.status === 'COMPLETED');
+                case 'aborted':
+                    return sessions.filter(s => ['ABORTED', 'EXPIRED'].includes(s.status));
+                default:
+                    return sessions;
+            }
+        }
+
+        function renderSessionCard(session) {
+            const status = session.status.toLowerCase();
+            const isActive = !['completed', 'aborted', 'expired'].includes(status);
+            const isCompleted = status === 'completed';
+            const isAborted = ['aborted', 'expired'].includes(status);
+
+            const cardClass = isActive ? 'active-session' : (isCompleted ? 'completed-session' : (isAborted ? 'aborted-session' : ''));
+
+            let actionButton = '';
+            if (isCompleted) {
+                actionButton = `<a href="session.html?id=${session.id}" class="btn btn-ghost btn-sm">View Results</a>`;
+            } else if (isAborted) {
+                actionButton = `<a href="session.html?id=${session.id}" class="btn btn-ghost btn-sm">View Details</a>`;
+            } else {
+                actionButton = `<a href="session.html?id=${session.id}" class="btn btn-primary btn-sm">Manage Session</a>`;
+            }
+
+            const signalBadge = session.signal_summary ? `
+                <span class="signal-badge ${getSignalClass(session.signal_summary)}">
+                    ${getSignalLabel(session.signal_summary)}
+                </span>
+            ` : '';
+
+            return `
+                <div class="session-card ${cardClass}">
+                    <div class="session-card-header">
+                        <div>
+                            <div class="session-title">${escapeHtml(session.title || 'Verification Session')}</div>
+                            <div class="session-counterparty">To: ${escapeHtml(session.counterparty_email)}</div>
+                        </div>
+                        <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+                            ${signalBadge}
+                            <span class="status-indicator ${status}">${getStatusLabel(session.status)}</span>
+                        </div>
+                    </div>
+                    <div class="session-meta">
+                        ${session.created_at ? `<span>Created: ${formatDate(session.created_at)}</span>` : ''}
+                        ${session.expires_at && isActive ? `<span>Expires: ${formatDate(session.expires_at)}</span>` : ''}
+                    </div>
+                    <div class="session-actions">
+                        ${actionButton}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                PENDING: 'Pending',
+                EMAIL_SENT: 'Email Sent',
+                CODE_VERIFIED: 'Code Verified',
+                WALLET_VERIFIED: 'Wallet Verified',
+                CHECKS_COMPLETE: 'Ready to Review',
+                COMPLETED: 'Completed',
+                ABORTED: 'Aborted',
+                EXPIRED: 'Expired'
+            };
+            return labels[status] || status;
+        }
+
+        function getSignalLabel(signal) {
+            const labels = {
+                CLEAR: 'Clear',
+                CAUTION: 'Caution',
+                REVIEW_RECOMMENDED: 'Review Recommended'
+            };
+            return labels[signal] || signal;
+        }
+
+        function getSignalClass(signal) {
+            switch (signal) {
+                case 'CLEAR': return 'clear';
+                case 'CAUTION': return 'caution';
+                case 'REVIEW_RECOMMENDED': return 'review';
+                default: return '';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        }
+
+        function toggleMobileNav() {
+            document.querySelector('.navbar').classList.toggle('mobile-open');
+        }
+    </script>
+</body>
+</html>

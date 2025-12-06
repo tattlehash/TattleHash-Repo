@@ -50,10 +50,14 @@ binding = "SHIELD_KV"
 id = "a5793c8faf3a432a9c925e1f7bf2b7c5"
 preview_id = "PA998fb733384f47a8bcf362f4f6d2b356"
 
-# --- R2 Bucket ---
+# --- R2 Buckets ---
 [[r2_buckets]]
 binding = "TATTLEHASH_PDF_BUCKET"
 bucket_name = "tattlehash-pdfs"
+
+[[r2_buckets]]
+binding = "ENFORCED_BUCKET"
+bucket_name = "tattlehash-enforced"
 
 # --- Queue Bindings ---
 [[queues.producers]]
@@ -85,6 +89,10 @@ RPC_BASE_MAIN = "https://base-mainnet.public.blastapi.io"
 POLICY_VERSION = "shield-v1"
 QUEUE_PREFIX = "anchor:jobs:"
 RECEIPT_PREFIX = "attest:"
+# Feature flags
+ENF_ENABLED = "true"
+ENFORCED_MODE_ENABLED = "true"
+ENFORCED_SESSIONS_ENABLED = "true"
 
 # --- Domain routing ---
 routes = [

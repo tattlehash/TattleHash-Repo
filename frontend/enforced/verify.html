@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Identity - TattleHash</title>
+    <meta name="description" content="Verify your identity to join an enforced attestation session.">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/png" href="../assets/tattlehash-head-1.png">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="../index.html" class="logo">
+                <div class="logo-icon">&#9879;&#65039;</div>
+                <span>TattleHash</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="verify-page">
+        <div class="container container-sm">
+            <div class="verify-card animate-fade-in">
+                <div class="verify-header">
+                    <div class="verify-icon">&#128274;</div>
+                    <h1>Verify Your Identity</h1>
+                </div>
+
+                <div id="session-info" class="session-info">
+                    <p id="invite-text">You've been invited to an Enforced attestation</p>
+                    <div id="session-title" class="session-title">Loading...</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <form id="verify-form" onsubmit="handleVerify(event)">
+                    <div class="form-group">
+                        <label class="form-label">Enter the 6-digit code from your email:</label>
+                        <div class="code-input-container">
+                            <input
+                                type="text"
+                                id="code-input"
+                                class="code-input"
+                                maxlength="6"
+                                pattern="[0-9]{6}"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                placeholder="000000"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" id="verify-btn">
+                        Verify &amp; Continue
+                    </button>
+
+                    <div id="verify-error" class="form-hint form-error hidden mt-md"></div>
+                </form>
+
+                <div class="divider"></div>
+
+                <div class="resend-section">
+                    <span class="text-muted">Didn't receive the code?</span>
+                    <button type="button" class="btn btn-ghost btn-sm" id="resend-btn" onclick="handleResend()">
+                        Resend Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <style>
+        .verify-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl) var(--spacing-md);
+        }
+
+        .verify-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-2xl);
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .verify-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .verify-icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .verify-header h1 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .session-info {
+            text-align: center;
+            padding: var(--spacing-lg);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .session-info p {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .session-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+        }
+
+        .inviter-email {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: var(--spacing-lg) 0;
+        }
+
+        .code-input-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .code-input {
+            width: 100%;
+            max-width: 240px;
+            font-size: 2rem;
+            font-family: var(--font-heading);
+            text-align: center;
+            letter-spacing: 0.5em;
+            padding: var(--spacing-lg);
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            transition: border-color var(--transition-fast);
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .code-input::placeholder {
+            color: var(--text-muted);
+            letter-spacing: 0.3em;
+        }
+
+        .resend-section {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-md);
+        }
+
+        .verification-success {
+            text-align: center;
+            padding: var(--spacing-xl);
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .success-message {
+            color: var(--success);
+            font-size: 1.25rem;
+            margin-bottom: var(--spacing-md);
+        }
+    </style>
+
+    <script src="../js/app.js"></script>
+    <script>
+        let sessionId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get session ID from URL
+            const params = new URLSearchParams(window.location.search);
+            sessionId = params.get('session');
+
+            if (!sessionId) {
+                document.getElementById('session-info').innerHTML = `
+                    <p class="text-muted">Invalid invitation link</p>
+                `;
+                document.getElementById('verify-form').style.display = 'none';
+                return;
+            }
+
+            // Load session info
+            loadSessionInfo();
+
+            // Auto-focus code input
+            document.getElementById('code-input').focus();
+
+            // Format code input
+            document.getElementById('code-input').addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+            });
+        });
+
+        async function loadSessionInfo() {
+            try {
+                // This is a public endpoint that shows minimal session info
+                const response = await fetch(`${API_BASE}/enforced/sessions/${sessionId}/info`);
+                const data = await response.json();
+
+                if (data.ok && data.session) {
+                    document.getElementById('invite-text').innerHTML = `
+                        You've been invited to an Enforced attestation by<br>
+                        <span class="inviter-email">${escapeHtml(data.session.initiator_email || 'an initiator')}</span>
+                    `;
+                    document.getElementById('session-title').textContent = data.session.title || 'Untitled Session';
+                }
+            } catch (error) {
+                console.error('Failed to load session info:', error);
+                document.getElementById('session-title').textContent = 'Session';
+            }
+        }
+
+        async function handleVerify(event) {
+            event.preventDefault();
+
+            const code = document.getElementById('code-input').value.trim();
+            const verifyBtn = document.getElementById('verify-btn');
+            const errorDiv = document.getElementById('verify-error');
+
+            if (code.length !== 6) {
+                errorDiv.textContent = 'Please enter a 6-digit code';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verifying...';
+
+            try {
+                const response = await fetch(`${API_BASE}/enforced/sessions/${sessionId}/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || data.error?.message || 'Verification failed');
+                }
+
+                // Show success state
+                document.querySelector('.verify-card').innerHTML = `
+                    <div class="verification-success">
+                        <div class="success-icon">&#9989;</div>
+                        <div class="success-message">Verified!</div>
+                        <p class="text-muted">Redirecting you to the workspace...</p>
+                    </div>
+                `;
+
+                // Check if user needs to login/register
+                const token = localStorage.getItem('token');
+
+                if (token) {
+                    // Already logged in - join session and redirect to workspace
+                    try {
+                        await fetchWithAuth(`/enforced/sessions/${sessionId}/join`, {
+                            method: 'POST',
+                        });
+                    } catch (e) {
+                        console.error('Join session error:', e);
+                    }
+                    window.location.href = `session.html?id=${sessionId}`;
+                } else {
+                    // Need to login/register first
+                    localStorage.setItem('pendingEnforcedSession', sessionId);
+                    window.location.href = `../register.html?redirect=${encodeURIComponent('/enforced/session.html?id=' + sessionId)}`;
+                }
+
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('hidden');
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verify & Continue';
+            }
+        }
+
+        async function handleResend() {
+            const resendBtn = document.getElementById('resend-btn');
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(`${API_BASE}/enforced/sessions/${sessionId}/resend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to resend code');
+                }
+
+                showToast('Verification code sent!', 'success');
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Resend Code';
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

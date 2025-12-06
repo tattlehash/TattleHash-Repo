@@ -3,6 +3,9 @@ import { execute, queryOne } from '../../db';
 import { createError } from '../../errors';
 import { emitEvent } from '../../relay';
 import { initializeCoinToss } from '../../coin-toss';
+import { makeReceipt } from '../../models/receipt';
+import { enqueue } from '../../jobs/queue';
+import { recKey } from '../../lib/kv';
 import type { Challenge, CreateChallengeInput } from './types';
 import { Env } from '../../types';
 
@@ -23,25 +26,53 @@ export async function createChallenge(
     // Determine fee arrangement (default to creator_pays)
     const feeArrangement = input.fee_arrangement ?? 'creator_pays';
 
+    // For SOLO mode with content_hash, create an attestation receipt and queue for anchoring
+    let receiptId: string | null = null;
+    if (input.mode === 'SOLO' && input.content_hash) {
+        const receipt = makeReceipt(env, input.content_hash);
+        receiptId = receipt.id;
+
+        // Store receipt in KV for anchoring
+        await env.ATT_KV.put(recKey(env, receipt.id), JSON.stringify(receipt));
+
+        // Queue for blockchain anchoring
+        await enqueue(env, { type: 'anchor', id: crypto.randomUUID(), receiptId: receipt.id });
+
+        console.log(JSON.stringify({
+            t: Date.now(),
+            at: 'challenge_anchoring_queued',
+            challenge_id: id,
+            receipt_id: receipt.id,
+            content_hash: input.content_hash,
+        }));
+    }
+
     // Insert challenge
     await execute(
         env.TATTLEHASH_DB,
         `INSERT INTO challenges (
-      id, mode, creator_user_id, counterparty_user_id,
-      title, description, status, expires_at, created_at, updated_at, fee_arrangement
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, mode, creator_user_id, counterparty_user_id, counterparty_email, custom_note,
+      title, description, content_hash, file_name, file_size,
+      status, expires_at, created_at, updated_at, fee_arrangement, receipt_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
             id,
             input.mode,
             creatorUserId,
             input.counterparty_user_id ?? null,
+            input.counterparty_email ?? null,
+            input.custom_note ?? null,
             input.title,
             input.description ?? null,
+            input.content_hash ?? null,
+            input.file_name ?? null,
+            input.file_size ?? null,
             'DRAFT',
             input.expires_at ?? null,
             createdAt,
             createdAt,
             feeArrangement,
+            receiptId,
         ]
     );
 

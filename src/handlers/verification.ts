@@ -503,6 +503,10 @@ export async function getVerifyPortal(
             color: rgba(255,255,255,0.8);
             font-size: 14px;
         }
+        .cta-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f7ff 100%);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
         .how-it-works {
             margin-top: 8px;
             padding: 16px;
@@ -833,6 +837,22 @@ function generateVerificationResultHtml(result: any): string {
             </div>
             ${sourceHtml}
             ${blockchainHtml}
+        </div>
+
+        <div class="card cta-card">
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <span style="font-size: 32px;">&#128737;</span>
+                <div style="flex: 1; min-width: 200px;">
+                    <p style="margin: 0 0 4px; font-weight: 600; color: #333;">Need proof for your own transactions?</p>
+                    <p style="margin: 0; color: #0066cc; font-size: 14px;">Your first attestation is free.</p>
+                </div>
+                <a href="https://tattlehash.com/register.html"
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                          color: white; padding: 12px 24px; border-radius: 8px;
+                          text-decoration: none; font-weight: 600; white-space: nowrap;">
+                    Get Started
+                </a>
+            </div>
         </div>
     `;
 }

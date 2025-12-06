@@ -1,26 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run typecheck:*)",
-      "Bash(npx tsc:*)",
-      "Bash(npm install)",
-      "Bash(npm test:*)",
-      "Bash(wrangler d1 execute:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(curl -X POST https://tattlehash-worker.ashiscock.workers.dev/auth/register  -H \"Content-Type: application/json\"  -d '{\"\"email\"\": \"\"tony@tattlehash.com\"\", \"\"password\"\": \"\"TattleHash2025!\"\"}')",
-      "Bash(curl:*)",
-      "Bash(wrangler secret put:*)",
-      "Bash(wrangler deployments:*)",
-      "Bash(wrangler deploy:*)",
-      "Bash(wrangler queues list:*)",
-      "Bash(npx wrangler deploy)",
-      "Bash(cat:*)",
-      "Bash(wrangler login)",
-      "Bash(npm audit:*)",
-      "Bash(npx wrangler:*)",
-      "Bash(timeout 10 npx wrangler tail:*)"
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

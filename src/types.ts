@@ -15,6 +15,7 @@ export interface Env {
 
   // R2 Buckets
   TATTLEHASH_PDF_BUCKET?: R2Bucket;
+  ENFORCED_BUCKET?: R2Bucket;
 
   // Queue
   TATTLEHASH_QUEUE: Queue;
@@ -44,6 +45,7 @@ export interface Env {
   TATTLEHASH_GATE_KEY?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  RESEND_API_KEY?: string;
 
   // Feature Flags
   TEST_TOKEN?: string;
